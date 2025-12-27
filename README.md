@@ -1,23 +1,53 @@
-# Resume Vault - UI Spike
+# Resume Vault
 
-**Throwaway prototype for flow validation only.**
+**Your personal resume generation assistant - create tailored resumes and cover letters in seconds.**
 
 ---
 
-## 🎯 What This Does
+## 📖 Introduction
 
-Two-page application with clean UI:
+Resume Vault is a web application that helps job seekers create customized resumes and cover letters tailored to specific job postings. Instead of manually editing your resume for each application, Resume Vault streamlines the process:
 
-**Page 1: Master Profile** (`/profile`)
-- Fill out your career information once
-- Personal info, experience, skills, education
+1. **Build your Master Profile once** - Store all your professional information in one place
+2. **Paste any job description** - Just copy the job posting you're applying for
+3. **Generate instantly** - Get a tailored resume and cover letter as downloadable PDFs
 
-**Page 2: Generate Resume** (`/generate`)
-- Paste job description
-- Click Generate
-- Download Resume + Cover Letter (PDFs)
+### Why Resume Vault?
 
-**No AI. No database. No persistence. Dummy content only.**
+- **Save time** - No more manual resume editing for every application
+- **Stay organized** - Keep all your professional information in one master profile
+- **Professional output** - Generate polished PDF documents ready to submit
+- **Easy workflow** - Simple two-step process: profile → generate
+
+### How It Works (User Perspective)
+
+**Step 1: Create Your Master Profile**
+- Navigate to the "Master Profile" page
+- Fill in your personal information (name, email, phone)
+- Write your professional summary
+- Add your work experience with detailed accomplishments
+- List your technical skills
+- Include your education and certifications
+
+**Step 2: Generate Documents**
+- Go to the "Generate Resume" page
+- Enter the job details (company name, position, job ID, posting link)
+- Paste the full job description
+- Click "Generate Resume & Cover Letter"
+- Download both PDFs and submit your application
+
+The application uses your master profile and analyzes the job description to create customized documents that highlight the most relevant aspects of your experience.
+
+---
+
+## 🎯 Key Features
+
+- **Responsive Design** - Works seamlessly on desktop, tablet, and mobile
+- **Vertical Sidebar Navigation** - Easy navigation between pages
+- **Form Validation** - Ensures all required information is provided
+- **Test Data Buttons** - Quickly fill forms with sample data for testing
+- **Clean Professional UI** - Modern, distraction-free interface
+- **Instant PDF Generation** - Download your documents immediately
 
 ---
 
@@ -41,16 +71,20 @@ Runs on: **http://localhost:5176** (or next available port)
 
 ---
 
-## 🧪 Test It
+## 🧪 Quick Start Guide
 
-1. Open **http://localhost:5176/profile** in browser
-2. Fill in all Master Profile fields (required)
-3. Click "Continue to Generate Resume →"
-4. Paste any text as job description
-5. Click **Generate Resume & Cover Letter**
-6. Download both PDFs
-7. Verify files contain dummy content
-8. Use top navigation to switch between pages
+1. **Open the application** - Navigate to **http://localhost:5175/profile** in your browser
+2. **Fill your Master Profile**:
+   - Click "Fill with Test Data" button for quick demo (or enter your real information)
+   - Complete all required fields (marked with *)
+   - Click "Continue to Generate Resume →"
+3. **Generate your documents**:
+   - Click "Fill with Test JD" button to populate job details (or enter real job info)
+   - Enter company name, position, and optionally job ID and posting link
+   - Paste the job description
+   - Click "Generate Resume & Cover Letter"
+4. **Download** - Click the download buttons to save your resume and cover letter as PDFs
+5. **Navigate** - Use the sidebar navigation to switch between "Master Profile" and "Generate Resume"
 
 ---
 
@@ -76,37 +110,55 @@ resume_vault/
 
 ---
 
-## ⚙️ How It Works
+## ⚙️ Technical Overview
 
-### Backend
-- `POST /generate` - Takes master profile + job description
-- Generates PDFs in memory (ReportLab)
-- Returns base64-encoded files in JSON
+### Backend (FastAPI + Python)
+- **Framework**: FastAPI for high-performance API
+- **PDF Generation**: ReportLab for creating professional PDF documents
+- **API Endpoint**: `POST /generate`
+  - Accepts master profile data and job description
+  - Generates resume and cover letter PDFs in memory
+  - Returns base64-encoded files in JSON response
+- **CORS enabled** for local development
 
-### Frontend
-- Two-page Vue app with routing
-- Master Profile page (`/profile`)
-- Generate Resume page (`/generate`)
-- Shared state via `provide/inject`
-- Converts base64 to blob for download
+### Frontend (Vue 3 + Vite)
+- **Framework**: Vue 3 with Composition API
+- **Routing**: Vue Router for navigation between pages
+- **State Management**: Provide/Inject for sharing master profile data
+- **Responsive Design**: Mobile-first CSS with breakpoints
+- **Components**:
+  - `AppNav.vue` - Vertical sidebar navigation with mobile hamburger menu
+  - `ProfileView.vue` - Master profile form with validation
+  - `GenerateView.vue` - Job details and document generation
+- **PDF Download**: Converts base64 to Blob for browser download
 
 ---
 
-## 🗑️ To Remove This Spike
+## 🎨 UI/UX Features
 
-```bash
-cd ..
-rm -rf resume_vault
-```
+- **Vertical Sidebar Navigation** - Fixed sidebar on desktop, collapsible hamburger menu on mobile
+- **Responsive Layout** - Adapts to all screen sizes (mobile, tablet, desktop)
+- **Form Validation** - Real-time validation prevents incomplete submissions
+- **Test Data Helpers** - One-click buttons to populate forms with sample data
+- **Professional Typography** - Clean, readable fonts and spacing
+- **Card-Based Design** - Organized sections with clear visual hierarchy
+- **Full-Width Layout** - Efficient use of screen space
+- **Active Navigation States** - Visual feedback showing current page
+
+## 🔮 Future Enhancements
+
+- **Database Integration** - Save and retrieve multiple master profiles
+- **AI-Powered Tailoring** - Automatically customize resume content based on job description
+- **Multiple Resume Templates** - Choose from different professional designs
+- **Job Application Tracking** - Track which jobs you've applied to
+- **Cover Letter Customization** - Edit generated cover letters before download
+- **Export Formats** - Support for DOCX, HTML, and other formats
+- **Version History** - Track different versions of your resume
+
+## 📝 License
+
+This project is open source and available for personal and commercial use.
 
 ---
 
-## ✅ Validation Complete
-
-- [x] Form captures data
-- [x] Generate button works
-- [x] PDFs download correctly
-- [x] No database needed
-- [x] No file storage
-
-**Flow validated. Ready for real implementation.**
+**Built with ❤️ for job seekers everywhere**
