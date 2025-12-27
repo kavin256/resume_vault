@@ -41,6 +41,7 @@ class GenerateRequest(BaseModel):
     company_name: str
     position: str
     job_id: str = ""  # Optional field
+    posting_link: str = ""  # Optional field
 
 
 class GenerateResponse(BaseModel):
@@ -89,13 +90,14 @@ def generate(request: GenerateRequest):
     # Generate dummy resume content
     licenses_section = f"\n\nLICENSES & CERTIFICATIONS\n{profile.licenses}" if profile.licenses else ""
     job_id_section = f" | Job ID: {request.job_id}" if request.job_id else ""
+    posting_link_section = f"\nPosting: {request.posting_link}" if request.posting_link else ""
 
     resume_content = f"""RESUME
 
 {profile.name}
 {profile.email} | {profile.phone}
 
-APPLYING FOR: {request.position} at {request.company_name}{job_id_section}
+APPLYING FOR: {request.position} at {request.company_name}{job_id_section}{posting_link_section}
 
 PROFESSIONAL SUMMARY
 {profile.summary}

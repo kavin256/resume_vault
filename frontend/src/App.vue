@@ -1,7 +1,9 @@
 <template>
   <div id="app">
     <AppNav />
-    <router-view />
+    <main class="main-content">
+      <router-view />
+    </main>
   </div>
 </template>
 
@@ -49,5 +51,28 @@ body {
   margin: 0 !important;
   padding: 0 !important;
   text-align: left !important;
+  display: flex;
+  width: 100vw;
+  overflow-x: hidden;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 260px;
+  min-height: 100vh;
+  background: #f8f9fb;
+  overflow-x: hidden;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  #app {
+    flex-direction: column;
+  }
+
+  .main-content {
+    margin-left: 0;
+    margin-top: 72px;
+  }
 }
 </style>

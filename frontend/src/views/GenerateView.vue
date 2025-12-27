@@ -221,55 +221,77 @@ function downloadFile(base64Data, filename, mimeType) {
 
 <style scoped>
 .generate-view {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 48px 32px 64px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 40px 48px 64px 48px;
+}
+
+@media (max-width: 1024px) {
+  .generate-view {
+    padding: 32px 32px 64px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .generate-view {
+    padding: 24px 20px 48px 20px;
+  }
 }
 
 .page-header {
-  margin-bottom: 40px;
+  margin-bottom: 32px;
 }
 
 .page-header h1 {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 600;
   color: #0f172a;
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
   letter-spacing: -0.02em;
 }
 
 .page-description {
-  font-size: 16px;
+  font-size: 15px;
   color: #64748b;
   margin: 0;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .card {
+  width: 100%;
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid #e5e7eb;
-  padding: 32px;
+  padding: 28px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
 }
 
 .section-title {
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 600;
   color: #0f172a;
-  margin: 0 0 20px 0;
+  margin: 0 0 18px 0;
   letter-spacing: -0.01em;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .form-group:last-child {
@@ -278,9 +300,9 @@ function downloadFile(base64Data, filename, mimeType) {
 
 label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 7px;
   font-weight: 500;
-  font-size: 14px;
+  font-size: 13px;
   color: #334155;
 }
 
@@ -290,11 +312,11 @@ label {
 
 input {
   width: 100%;
-  padding: 11px 14px;
+  padding: 10px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 400;
   color: #0f172a;
   background: #ffffff;
@@ -315,11 +337,11 @@ input::placeholder {
 
 textarea {
   width: 100%;
-  padding: 14px;
+  padding: 12px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   color: #0f172a;
   background: #ffffff;
@@ -341,12 +363,12 @@ textarea::placeholder {
 
 /* TODO: Remove this style before production */
 .jd-actions {
-  margin-top: 16px;
+  margin-top: 12px;
   text-align: left;
 }
 
 .generate-section {
-  margin-top: 24px;
+  margin-top: 20px;
   text-align: center;
 }
 
@@ -444,6 +466,12 @@ textarea::placeholder {
 .download-buttons {
   display: flex;
   gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .download-buttons {
+    flex-direction: column;
+  }
 }
 
 .btn-download {
