@@ -77,17 +77,15 @@ Software Engineer | StartupCo | 2018 - 2020
 
     <div class="action-footer">
       <!-- TODO: Remove this test button before production -->
-      <button @click="toggleTestData" class="btn btn-secondary">
+      <Button @click="toggleTestData" variant="outline">
         {{ hasData ? 'Clear Data' : 'Fill with Test Data' }}
-      </button>
-      <button
+      </Button>
+      <Button
         @click="continueToGenerate"
         :disabled="!isFormValid"
-        class="btn btn-primary"
-        :class="{ 'btn-disabled': !isFormValid }"
       >
         Continue to Generate Resume →
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -95,6 +93,7 @@ Software Engineer | StartupCo | 2018 - 2020
 <script setup>
 import { inject, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { Button } from '@/components/ui/button'
 
 const profile = inject('masterProfile')
 const router = useRouter()
@@ -300,49 +299,5 @@ textarea::placeholder {
   .action-footer {
     flex-direction: column-reverse;
   }
-
-  .btn {
-    width: 100%;
-    text-align: center;
-  }
-}
-
-.btn {
-  display: inline-block;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background-color 0.15s ease;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.btn-primary:disabled,
-.btn-primary.btn-disabled {
-  background: #94a3b8;
-  color: #cbd5e1;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-/* TODO: Remove this style before production */
-.btn-secondary {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-.btn-secondary:hover {
-  background: #cbd5e1;
 }
 </style>

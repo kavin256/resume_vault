@@ -43,16 +43,16 @@
       ></textarea>
       <!-- TODO: Remove this test button before production -->
       <div class="jd-actions">
-        <button @click="toggleTestJD" class="btn btn-secondary">
+        <Button @click="toggleTestJD" variant="outline">
           {{ jobDescription ? 'Clear JD' : 'Fill with Test JD' }}
-        </button>
+        </Button>
       </div>
     </div>
 
     <div class="generate-section">
-      <button @click="handleGenerate" :disabled="isGenerating" class="btn btn-generate">
+      <Button @click="handleGenerate" :disabled="isGenerating" size="lg">
         {{ isGenerating ? 'Generating...' : 'Generate Resume & Cover Letter' }}
-      </button>
+      </Button>
     </div>
 
     <div v-if="error" class="error-card">
@@ -69,18 +69,18 @@
       </div>
       <p class="download-description">Your resume and cover letter have been generated successfully.</p>
       <div class="download-buttons">
-        <button @click="downloadResume" class="btn btn-download">
+        <Button @click="downloadResume" variant="secondary" class="flex-1 button-with-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
           </svg>
           Download Resume
-        </button>
-        <button @click="downloadCoverLetter" class="btn btn-download">
+        </Button>
+        <Button @click="downloadCoverLetter" variant="secondary" class="flex-1 button-with-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
           </svg>
           Download Cover Letter
-        </button>
+        </Button>
       </div>
     </div>
   </div>
@@ -88,6 +88,7 @@
 
 <script setup>
 import { ref, inject } from 'vue'
+import { Button } from '@/components/ui/button'
 
 const masterProfile = inject('masterProfile')
 const jobDescription = ref('')
@@ -372,44 +373,6 @@ textarea::placeholder {
   text-align: center;
 }
 
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 6px;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.btn-generate {
-  background: #3b82f6;
-  color: white;
-  padding: 14px 32px;
-  font-size: 16px;
-}
-
-.btn-generate:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.btn-generate:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-}
-
-/* TODO: Remove this style before production */
-.btn-secondary {
-  background: #e2e8f0;
-  color: #475569;
-}
-
-.btn-secondary:hover {
-  background: #cbd5e1;
-}
 
 .error-card {
   margin-top: 24px;
@@ -468,23 +431,19 @@ textarea::placeholder {
   gap: 12px;
 }
 
+.flex-1 {
+  flex: 1;
+}
+
+.button-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 640px) {
   .download-buttons {
     flex-direction: column;
   }
-}
-
-.btn-download {
-  background: #475569;
-  color: white;
-  flex: 1;
-}
-
-.btn-download:hover {
-  background: #334155;
-}
-
-.btn-download svg {
-  flex-shrink: 0;
 }
 </style>
