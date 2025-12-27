@@ -33,86 +33,113 @@
           <div class="app-company">TechCorp Inc.</div>
           <div class="app-role">Senior Full-Stack Engineer</div>
           <div class="app-date">2025-12-15</div>
-          <button class="btn-details" @click="openDrawer(applications[0])">Details</button>
+          <Button variant="outline" size="sm" @click="openDrawer(applications[0])">Details</Button>
         </div>
 
         <div class="app-row">
           <div class="app-company">InnovateLab</div>
           <div class="app-role">Frontend Engineer</div>
           <div class="app-date">2025-11-28</div>
-          <button class="btn-details" @click="openDrawer(applications[1])">Details</button>
+          <Button variant="outline" size="sm" @click="openDrawer(applications[1])">Details</Button>
         </div>
 
         <div class="app-row">
           <div class="app-company">StartupCo</div>
           <div class="app-role">Backend Engineer</div>
           <div class="app-date">2025-10-05</div>
-          <button class="btn-details" @click="openDrawer(applications[2])">Details</button>
+          <Button variant="outline" size="sm" @click="openDrawer(applications[2])">Details</Button>
         </div>
       </div>
     </div>
 
-    <!-- Drawer overlay -->
-    <div v-if="drawerOpen" class="drawer-overlay" @click="closeDrawer"></div>
+    <!-- Drawer using shadcn-vue Sheet -->
+    <Sheet v-model:open="drawerOpen">
+      <SheetContent
+        :side="drawerSide"
+        :class="drawerSide === 'bottom' ? 'h-[85vh]' : 'sm:max-w-[540px]'"
+        class="overflow-y-auto"
+      >
+        <SheetHeader>
+          <SheetTitle>Application Details</SheetTitle>
+          <SheetDescription>
+            View details of your job application
+          </SheetDescription>
+        </SheetHeader>
 
-    <!-- Drawer -->
-    <div class="drawer" :class="{ 'drawer-open': drawerOpen }">
-      <div class="drawer-header">
-        <h3>Application Details</h3>
-        <button class="drawer-close" @click="closeDrawer">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
+        <div class="drawer-content" v-if="selectedApp">
+          <!-- Job Details -->
+          <div class="drawer-section">
+            <h4 class="drawer-section-title">Job Details</h4>
+            <div class="detail-row">
+              <span class="detail-label">Company</span>
+              <span class="detail-value">{{ selectedApp.company }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Position</span>
+              <span class="detail-value">{{ selectedApp.position }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Job ID</span>
+              <span class="detail-value">{{ selectedApp.jobId }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Posting Link</span>
+              <a :href="selectedApp.postingLink" target="_blank" class="detail-link">View Posting →</a>
+            </div>
+          </div>
 
-      <div class="drawer-content" v-if="selectedApp">
-        <!-- Job Details -->
-        <div class="drawer-section">
-          <h4 class="drawer-section-title">Job Details</h4>
-          <div class="detail-row">
-            <span class="detail-label">Company</span>
-            <span class="detail-value">{{ selectedApp.company }}</span>
+          <!-- Job Description -->
+          <div class="drawer-section">
+            <h4 class="drawer-section-title">Job Description</h4>
+            <div class="job-description">{{ selectedApp.jobDescription }}</div>
           </div>
-          <div class="detail-row">
-            <span class="detail-label">Position</span>
-            <span class="detail-value">{{ selectedApp.position }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Job ID</span>
-            <span class="detail-value">{{ selectedApp.jobId }}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Posting Link</span>
-            <a :href="selectedApp.postingLink" target="_blank" class="detail-link">View Posting →</a>
+
+          <!-- Date Generated -->
+          <div class="drawer-section">
+            <h4 class="drawer-section-title">Generation Info</h4>
+            <div class="detail-row">
+              <span class="detail-label">Date Generated</span>
+              <span class="detail-value">{{ selectedApp.dateGenerated }}</span>
+            </div>
           </div>
         </div>
-
-        <!-- Job Description -->
-        <div class="drawer-section">
-          <h4 class="drawer-section-title">Job Description</h4>
-          <div class="job-description">{{ selectedApp.jobDescription }}</div>
-        </div>
-
-        <!-- Date Generated -->
-        <div class="drawer-section">
-          <h4 class="drawer-section-title">Generation Info</h4>
-          <div class="detail-row">
-            <span class="detail-label">Date Generated</span>
-            <span class="detail-value">{{ selectedApp.dateGenerated }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { Button } from '@/components/ui/button'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 
 const drawerOpen = ref(false)
 const selectedApp = ref(null)
+const windowWidth = ref(window.innerWidth)
+
+// Update window width on resize
+const updateWidth = () => {
+  windowWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateWidth)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateWidth)
+})
+
+// Responsive drawer side: bottom for mobile, right for desktop
+const drawerSide = computed(() => {
+  return windowWidth.value < 768 ? 'bottom' : 'right'
+})
 
 // Dummy application data
 const applications = [
@@ -170,19 +197,13 @@ What you'll do:
 function openDrawer(app) {
   selectedApp.value = app
   drawerOpen.value = true
-  document.body.style.overflow = 'hidden'
-}
-
-function closeDrawer() {
-  drawerOpen.value = false
-  document.body.style.overflow = ''
 }
 </script>
 
 <style scoped>
 .home-view {
   width: 100%;
-  max-width: none;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 40px 48px 64px 48px;
 }
@@ -242,94 +263,9 @@ function closeDrawer() {
 .app-role { color: #334155; font-size: 14px; }
 .app-date { color: #64748b; font-size: 13px; }
 
-.btn-details {
-  padding: 6px 16px;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #475569;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-details:hover {
-  background: #e2e8f0;
-  border-color: #94a3b8;
-  color: #334155;
-}
-
-/* Drawer overlay */
-.drawer-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 200;
-  backdrop-filter: blur(2px);
-}
-
-/* Drawer */
-.drawer {
-  position: fixed;
-  right: -500px;
-  top: 0;
-  width: 500px;
-  height: 100vh;
-  background: #ffffff;
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
-  z-index: 201;
-  transition: right 0.3s ease;
-  overflow-y: auto;
-}
-
-.drawer.drawer-open {
-  right: 0;
-}
-
-.drawer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24px 28px;
-  border-bottom: 1px solid #e5e7eb;
-  position: sticky;
-  top: 0;
-  background: #ffffff;
-  z-index: 1;
-}
-
-.drawer-header h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #0f172a;
-  margin: 0;
-}
-
-.drawer-close {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.drawer-close:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-}
-
+/* Drawer content */
 .drawer-content {
-  padding: 28px;
+  padding-top: 24px;
 }
 
 .drawer-section {
@@ -399,28 +335,9 @@ function closeDrawer() {
   border: 1px solid #e2e8f0;
 }
 
-/* Mobile drawer - slide from bottom */
-@media (max-width: 768px) {
-  .drawer {
-    right: auto;
-    bottom: -100%;
-    left: 0;
-    top: auto;
-    width: 100%;
-    height: 80vh;
-    border-radius: 16px 16px 0 0;
-    transition: bottom 0.3s ease;
-  }
-
-  .drawer.drawer-open {
-    right: auto;
-    bottom: 0;
-  }
-}
-
 @media (max-width: 900px) {
   .stats-grid { grid-template-columns: 1fr; }
   .app-row { grid-template-columns: 1fr; gap: 8px; }
-  .app-date, .btn-details { justify-self: start; }
+  .app-date { justify-self: start; }
 }
 </style>

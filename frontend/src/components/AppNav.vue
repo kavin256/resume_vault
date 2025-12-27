@@ -21,9 +21,10 @@
         </svg>
         <span class="brand-text">Resume Vault</span>
       </div>
-      <button
+      <Button
         @click="toggleMobileMenu"
-        class="mobile-menu-btn"
+        variant="ghost"
+        size="icon"
         aria-label="Toggle menu"
       >
         <svg
@@ -51,7 +52,7 @@
           <line x1="18" y1="6" x2="6" y2="18"></line>
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
-      </button>
+      </Button>
     </div>
 
     <!-- Sidebar Navigation -->
@@ -129,6 +130,7 @@
 
 <script setup>
 import { ref } from "vue";
+import { Button } from "@/components/ui/button";
 
 const mobileMenuOpen = ref(false);
 
@@ -255,25 +257,6 @@ function closeMobileMenu() {
   .nav-brand svg {
     flex-shrink: 0;
     color: #3b82f6;
-  }
-
-  .mobile-menu-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: transparent;
-    border: none;
-    color: #64748b;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.15s ease;
-  }
-
-  .mobile-menu-btn:hover {
-    background: #f8fafc;
-    color: #0f172a;
   }
 
   .nav-sidebar {
