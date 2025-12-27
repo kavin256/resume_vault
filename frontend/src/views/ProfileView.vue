@@ -1,206 +1,316 @@
-<script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
-import { useProfileStore } from '../stores/profile'
-import type { UserProfile } from '../types'
+<template>
+  <div class="profile-view">
+    <div class="page-header">
+      <h1>Master Profile</h1>
+      <p class="page-description">Enter your career information once. This data will be used to generate tailored resumes.</p>
+    </div>
 
-const profileStore = useProfileStore()
-const showAlert = ref(false)
-const alertMessage = ref('')
-const alertType = ref<'success' | 'error'>('success')
+    <div class="card">
+      <h2 class="section-title">Personal Information</h2>
 
-const formData = ref<UserProfile>({
-  full_name: '',
-  email: '',
-  phone: '',
-  location: '',
-  linkedin_url: '',
-  portfolio_url: '',
-  github_url: '',
-  professional_summary: '',
-  work_experience: '',
-  education: '',
-  technical_skills: '',
-  soft_skills: '',
-  certifications: '',
-  projects: '',
-  achievements: '',
-  languages: '',
-  publications: '',
-  volunteer_work: '',
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name <span class="required">*</span></label>
+          <input v-model="profile.name" type="text" required />
+        </div>
+
+        <div class="form-group">
+          <label>Email <span class="required">*</span></label>
+          <input v-model="profile.email" type="email" required />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Phone <span class="required">*</span></label>
+          <input v-model="profile.phone" type="tel" required />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Professional Summary</h2>
+
+      <div class="form-group">
+        <label>Summary <span class="required">*</span></label>
+        <textarea v-model="profile.summary" rows="3" required placeholder="e.g., Results-driven software engineer with 5+ years of experience building scalable web applications..."></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Professional Experience</h2>
+
+      <div class="form-group">
+        <label>Work Experience <span class="required">*</span></label>
+        <textarea v-model="profile.professionalExperience" rows="10" required placeholder="List your professional experience in detail. Include company names, job titles, dates, and key accomplishments.
+
+Example:
+Senior Software Engineer | Tech Company Inc. | 2020 - Present
+• Led development of customer-facing web application serving 100k+ users
+• Improved application performance by 40% through optimization initiatives
+• Mentored team of 3 junior developers
+
+Software Engineer | StartupCo | 2018 - 2020
+• Built REST APIs using Python and FastAPI
+• Implemented CI/CD pipeline reducing deployment time by 60%"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="section-title">Skills & Education</h2>
+
+      <div class="form-group">
+        <label>Technical Skills <span class="required">*</span></label>
+        <textarea v-model="profile.skills" rows="3" required placeholder="e.g., JavaScript, TypeScript, Python, React, Vue.js, Node.js, FastAPI, PostgreSQL, MongoDB, AWS, Docker, Git"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Education <span class="required">*</span></label>
+        <input v-model="profile.education" type="text" required placeholder="e.g., BS Computer Science, Stanford University, 2018" />
+      </div>
+
+      <div class="form-group">
+        <label>Licenses & Certifications</label>
+        <textarea v-model="profile.licenses" rows="2" placeholder="e.g., AWS Certified Solutions Architect, PMP Certification, Certified Kubernetes Administrator"></textarea>
+      </div>
+    </div>
+
+    <div class="action-footer">
+      <!-- TODO: Remove this test button before production -->
+      <button @click="toggleTestData" class="btn btn-secondary">
+        {{ hasData ? 'Clear Data' : 'Fill with Test Data' }}
+      </button>
+      <button
+        @click="continueToGenerate"
+        :disabled="!isFormValid"
+        class="btn btn-primary"
+        :class="{ 'btn-disabled': !isFormValid }"
+      >
+        Continue to Generate Resume →
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { inject, computed } from 'vue'
+import { useRouter } from 'vue-router'
+
+const profile = inject('masterProfile')
+const router = useRouter()
+
+// Validate all required fields are filled
+const isFormValid = computed(() => {
+  return profile.value.name?.trim() &&
+         profile.value.email?.trim() &&
+         profile.value.phone?.trim() &&
+         profile.value.summary?.trim() &&
+         profile.value.professionalExperience?.trim() &&
+         profile.value.skills?.trim() &&
+         profile.value.education?.trim()
 })
 
-const isEditing = computed(() => !!profileStore.currentProfile?.id)
-
-onMounted(async () => {
-  await profileStore.fetchProfiles()
-  if (profileStore.currentProfile) {
-    formData.value = { ...profileStore.currentProfile }
-  }
+// TODO: Remove this computed and function before production
+const hasData = computed(() => {
+  return profile.value.name || profile.value.email || profile.value.phone ||
+         profile.value.summary || profile.value.professionalExperience ||
+         profile.value.skills || profile.value.education || profile.value.licenses
 })
 
-async function saveProfile() {
-  try {
-    if (isEditing.value && profileStore.currentProfile?.id) {
-      await profileStore.updateProfile(profileStore.currentProfile.id, formData.value)
-      displayAlert('Profile updated successfully!', 'success')
-    } else {
-      await profileStore.createProfile(formData.value)
-      displayAlert('Profile created successfully!', 'success')
-    }
-  } catch (error) {
-    displayAlert('Failed to save profile. Please try again.', 'error')
+function continueToGenerate() {
+  if (isFormValid.value) {
+    router.push('/generate')
   }
 }
 
-function loadProfile() {
-  if (profileStore.currentProfile) {
-    formData.value = { ...profileStore.currentProfile }
-    displayAlert('Profile reloaded', 'success')
-  }
-}
+// TODO: Remove this test function before production
+function toggleTestData() {
+  if (hasData.value) {
+    // Clear data
+    profile.value.name = ''
+    profile.value.email = ''
+    profile.value.phone = ''
+    profile.value.summary = ''
+    profile.value.professionalExperience = ''
+    profile.value.skills = ''
+    profile.value.education = ''
+    profile.value.licenses = ''
+  } else {
+    // Fill with test data
+    profile.value.name = 'Sarah Chen'
+    profile.value.email = 'sarah.chen@email.com'
+    profile.value.phone = '+1 (555) 123-4567'
+    profile.value.summary = 'Results-driven Full-Stack Software Engineer with 5+ years of experience building scalable web applications and backend systems. Proven track record of leading development teams, optimizing performance, and delivering high-quality solutions that serve 100k+ users. Strong expertise in modern JavaScript frameworks, Python, and cloud technologies.'
+    profile.value.professionalExperience = `Senior Full-Stack Software Engineer | TechCorp Inc. | 2021 - Present
+• Led development of customer-facing SaaS platform serving 150k+ active users
+• Architected and implemented microservices backend using FastAPI and PostgreSQL
+• Improved application performance by 45% through code optimization and caching strategies
+• Mentored team of 4 junior developers and conducted regular code reviews
+• Implemented CI/CD pipeline using GitHub Actions, reducing deployment time by 70%
 
-function displayAlert(message: string, type: 'success' | 'error') {
-  alertMessage.value = message
-  alertType.value = type
-  showAlert.value = true
-  setTimeout(() => {
-    showAlert.value = false
-  }, 5000)
+Full-Stack Software Engineer | InnovateLab | 2019 - 2021
+• Built responsive web applications using React and Vue.js
+• Developed RESTful APIs and GraphQL endpoints for mobile and web clients
+• Integrated third-party services including Stripe, Twilio, and SendGrid
+• Collaborated with product team to define features and technical requirements
+• Reduced bug count by 60% through comprehensive unit and integration testing
+
+Junior Software Developer | StartupCo | 2018 - 2019
+• Contributed to full-stack development using Node.js and MongoDB
+• Implemented user authentication and authorization features
+• Participated in agile development process with 2-week sprints`
+    profile.value.skills = 'JavaScript, TypeScript, Python, React, Vue.js, Node.js, Express, FastAPI, Django, PostgreSQL, MongoDB, Redis, AWS (EC2, S3, Lambda, RDS), Docker, Kubernetes, Git, GitHub Actions, CI/CD, REST APIs, GraphQL, WebSockets, Jest, Pytest, Agile/Scrum'
+    profile.value.education = 'BS Computer Science, Stanford University, 2018'
+    profile.value.licenses = 'AWS Certified Solutions Architect - Associate, MongoDB Certified Developer'
+  }
 }
 </script>
 
-<template>
-  <div class="page-header">
-    <h1>Master Profile</h1>
-    <p>Your complete, truthful career history - the source of truth for all resume versions</p>
-  </div>
+<style scoped>
+.profile-view {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 48px 32px 64px;
+}
 
-  <div v-if="showAlert" :class="`alert alert-${alertType}`">
-    {{ alertMessage }}
-  </div>
+.page-header {
+  margin-bottom: 40px;
+}
 
-  <div class="card">
-    <form @submit.prevent="saveProfile">
-      <h3>Personal Information</h3>
-      <div class="grid grid-2">
-        <div class="form-group">
-          <label for="full_name">Full Name *</label>
-          <input type="text" id="full_name" v-model="formData.full_name" required />
-        </div>
-        <div class="form-group">
-          <label for="email">Email *</label>
-          <input type="email" id="email" v-model="formData.email" required />
-        </div>
-      </div>
+.page-header h1 {
+  font-size: 32px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.02em;
+}
 
-      <div class="grid grid-2">
-        <div class="form-group">
-          <label for="phone">Phone</label>
-          <input type="tel" id="phone" v-model="formData.phone" />
-        </div>
-        <div class="form-group">
-          <label for="location">Location</label>
-          <input type="text" id="location" v-model="formData.location" placeholder="City, State/Country" />
-        </div>
-      </div>
+.page-description {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.6;
+}
 
-      <h3 style="margin-top: 2rem">Online Presence</h3>
-      <div class="grid grid-2">
-        <div class="form-group">
-          <label for="linkedin_url">LinkedIn URL</label>
-          <input type="url" id="linkedin_url" v-model="formData.linkedin_url" placeholder="https://linkedin.com/in/..." />
-        </div>
-        <div class="form-group">
-          <label for="portfolio_url">Portfolio URL</label>
-          <input type="url" id="portfolio_url" v-model="formData.portfolio_url" />
-        </div>
-      </div>
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
 
-      <div class="form-group">
-        <label for="github_url">GitHub URL</label>
-        <input type="url" id="github_url" v-model="formData.github_url" placeholder="https://github.com/..." />
-      </div>
+.section-title {
+  font-size: 19px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 24px 0;
+  letter-spacing: -0.01em;
+}
 
-      <h3 style="margin-top: 2rem">Professional Summary</h3>
-      <div class="form-group">
-        <label for="professional_summary">Professional Summary</label>
-        <textarea id="professional_summary" v-model="formData.professional_summary" placeholder="A brief overview of your career, key achievements, and what you're looking for..."></textarea>
-      </div>
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
 
-      <h3 style="margin-top: 2rem">Work Experience</h3>
-      <div class="form-group">
-        <label for="work_experience">Work Experience</label>
-        <textarea id="work_experience" v-model="formData.work_experience" style="min-height: 200px" placeholder="List your work experience with company names, positions, dates, and responsibilities...
+.form-row:last-child {
+  margin-bottom: 0;
+}
 
-Example:
-Software Engineer | TechCorp Inc. | Jan 2020 - Present
-- Developed scalable web applications using React and Node.js
-- Led a team of 3 engineers..."></textarea>
-      </div>
+.form-group {
+  margin-bottom: 20px;
+}
 
-      <h3 style="margin-top: 2rem">Education</h3>
-      <div class="form-group">
-        <label for="education">Education</label>
-        <textarea id="education" v-model="formData.education" placeholder="List your educational background...
+.form-group:last-child {
+  margin-bottom: 0;
+}
 
-Example:
-Bachelor of Science in Computer Science | University Name | 2016-2020
-- GPA: 3.8/4.0
-- Relevant coursework: Data Structures, Algorithms, Machine Learning"></textarea>
-      </div>
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #334155;
+}
 
-      <h3 style="margin-top: 2rem">Skills</h3>
-      <div class="grid grid-2">
-        <div class="form-group">
-          <label for="technical_skills">Technical Skills</label>
-          <textarea id="technical_skills" v-model="formData.technical_skills" placeholder="Python, JavaScript, React, Node.js, PostgreSQL, AWS, Docker, Git..."></textarea>
-        </div>
-        <div class="form-group">
-          <label for="soft_skills">Soft Skills</label>
-          <textarea id="soft_skills" v-model="formData.soft_skills" placeholder="Leadership, Communication, Problem-solving, Team collaboration..."></textarea>
-        </div>
-      </div>
+.required {
+  color: #dc2626;
+}
 
-      <h3 style="margin-top: 2rem">Additional Information</h3>
-      <div class="form-group">
-        <label for="certifications">Certifications</label>
-        <textarea id="certifications" v-model="formData.certifications" placeholder="List relevant certifications..."></textarea>
-      </div>
+input,
+textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  color: #0f172a;
+  background: #ffffff;
+  line-height: 1.5;
+  transition: border-color 0.15s ease;
+}
 
-      <div class="form-group">
-        <label for="projects">Projects</label>
-        <textarea id="projects" v-model="formData.projects" style="min-height: 150px" placeholder="Describe key projects you've worked on..."></textarea>
-      </div>
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: #ffffff;
+}
 
-      <div class="form-group">
-        <label for="achievements">Achievements</label>
-        <textarea id="achievements" v-model="formData.achievements" placeholder="Awards, recognitions, significant accomplishments..."></textarea>
-      </div>
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
 
-      <div class="form-group">
-        <label for="languages">Languages</label>
-        <textarea id="languages" v-model="formData.languages" placeholder="Programming languages: Python, JavaScript...
-Spoken languages: English (native), Spanish (fluent)..."></textarea>
-      </div>
+.action-footer {
+  margin-top: 32px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
 
-      <div class="form-group">
-        <label for="publications">Publications</label>
-        <textarea id="publications" v-model="formData.publications" placeholder="Research papers, blog posts, articles..."></textarea>
-      </div>
+.btn {
+  display: inline-block;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
 
-      <div class="form-group">
-        <label for="volunteer_work">Volunteer Work</label>
-        <textarea id="volunteer_work" v-model="formData.volunteer_work" placeholder="Community involvement, volunteer positions..."></textarea>
-      </div>
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+}
 
-      <div style="display: flex; gap: 1rem; margin-top: 2rem">
-        <button type="submit" class="btn btn-primary" :disabled="profileStore.loading">
-          {{ isEditing ? 'Update Profile' : 'Save Profile' }}
-        </button>
-        <button type="button" class="btn btn-outline" @click="loadProfile" :disabled="!isEditing">
-          Reload
-        </button>
-      </div>
-    </form>
-  </div>
-</template>
+.btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.btn-primary:disabled,
+.btn-primary.btn-disabled {
+  background: #94a3b8;
+  color: #cbd5e1;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* TODO: Remove this style before production */
+.btn-secondary {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.btn-secondary:hover {
+  background: #cbd5e1;
+}
+</style>
