@@ -223,8 +223,8 @@ function downloadFile(base64Data, filename, mimeType) {
 <style scoped>
 .generate-view {
   width: 100%;
-  max-width: none;
-  margin: 0;
+  max-width: 900px;
+  margin: 0 auto;
   padding: 40px 48px 64px 48px;
 }
 
