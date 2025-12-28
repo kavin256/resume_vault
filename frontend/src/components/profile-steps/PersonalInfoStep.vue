@@ -239,7 +239,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref } from "vue";
+import { defineProps, defineEmits, ref, watch } from "vue";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
@@ -283,22 +283,38 @@ const languageSchema = toTypedSchema(
   })
 );
 
-const { handleSubmit, resetForm, setValues } = useForm({
+const { handleSubmit, resetForm, setValues, setTouched } = useForm({
   validationSchema: languageSchema,
   initialValues: {
     language: "",
     proficiency: "Professional",
   },
+  validateOnMount: false,
 });
 
-const onLanguageSubmit = handleSubmit((values) => {
-  formData.languages.push({
-    language: values.language,
-    proficiency: values.proficiency,
-  });
-  resetForm();
-  languageDialogOpen.value = false;
+// Reset form state when dialog opens
+watch(languageDialogOpen, (isOpen) => {
+  if (isOpen) {
+    resetForm();
+  }
 });
+
+const onLanguageSubmit = handleSubmit(
+  (values) => {
+    formData.languages.push({
+      language: values.language,
+      proficiency: values.proficiency,
+    });
+    resetForm();
+    languageDialogOpen.value = false;
+  },
+  (validationErrors) => {
+    // On validation failure, mark all error fields as touched
+    Object.keys(validationErrors.errors).forEach((field) => {
+      setTouched(field, true);
+    });
+  }
+);
 
 function removeLanguage(index) {
   formData.languages.splice(index, 1);

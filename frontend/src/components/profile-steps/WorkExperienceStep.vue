@@ -14,145 +14,244 @@
     </div>
 
     <div class="section-header">
-      <Button @click="addExperience" variant="outline">
-        + Add Experience
-      </Button>
+      <Dialog
+        :open="experienceDialogOpen"
+        @update:open="experienceDialogOpen = $event"
+      >
+        <DialogTrigger>
+          <Button variant="outline"> + Add Experience </Button>
+        </DialogTrigger>
+        <DialogContent class="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add Work Experience</DialogTitle>
+            <DialogDescription>
+              Add your professional work experience details.
+            </DialogDescription>
+          </DialogHeader>
+          <form @submit="onExperienceSubmit" class="dialog-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Job Title <span class="required">*</span></label>
+                <input
+                  v-model="experienceForm.jobTitle"
+                  type="text"
+                  placeholder="Senior Software Engineer"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Company Name <span class="required">*</span></label>
+                <input
+                  v-model="experienceForm.companyName"
+                  type="text"
+                  placeholder="Tech Company Inc."
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Employment Type</label>
+                <select
+                  v-model="experienceForm.employmentType"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="Full-time">Full-time</option>
+                  <option value="Part-time">Part-time</option>
+                  <option value="Contract">Contract</option>
+                  <option value="Internship">Internship</option>
+                  <option value="Freelance">Freelance</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Location</label>
+                <input
+                  v-model="experienceForm.location"
+                  type="text"
+                  placeholder="San Francisco, CA"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Start Date <span class="required">*</span></label>
+                <input
+                  v-model="experienceForm.startDate"
+                  type="month"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>End Date</label>
+                <input
+                  v-model="experienceForm.endDate"
+                  type="month"
+                  :disabled="experienceForm.currentlyWorking"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="checkbox-label flex items-center gap-2">
+                <input
+                  v-model="experienceForm.currentlyWorking"
+                  type="checkbox"
+                  @change="handleCurrentlyWorkingChange"
+                />
+                <span>I currently work here</span>
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label>Responsibilities</label>
+              <textarea
+                v-model="experienceForm.responsibilitiesText"
+                rows="4"
+                placeholder="• Led development of customer-facing web application&#10;• Managed team of 5 engineers&#10;• Implemented CI/CD pipeline"
+                class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              ></textarea>
+              <small class="help-text"
+                >Start each item with a bullet point (•) or dash (-)</small
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Achievements</label>
+              <textarea
+                v-model="experienceForm.achievementsText"
+                rows="4"
+                placeholder="• Improved application performance by 40%&#10;• Reduced deployment time from 2 hours to 15 minutes"
+                class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              ></textarea>
+              <small class="help-text"
+                >Start each item with a bullet point (•) or dash (-)</small
+              >
+            </div>
+
+            <div class="form-group">
+              <label>Technologies Used</label>
+              <input
+                v-model="experienceForm.technologiesText"
+                type="text"
+                placeholder="React, Node.js, PostgreSQL, AWS, Docker"
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              />
+              <small class="help-text">Separate with commas</small>
+            </div>
+
+            <DialogFooter>
+              <Button
+                @click="experienceDialogOpen = false"
+                variant="outline"
+                type="button"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" :disabled="isSaving">
+                {{ isSaving ? "Saving..." : "Save Experience" }}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
 
-    <Card
-      v-for="(exp, index) in formData.workExperience"
-      :key="index"
-      class="form-card"
-    >
-      <CardContent class="pt-6">
-        <div class="card-header">
-          <h3 class="form-section-title">Experience {{ index + 1 }}</h3>
-          <Button
-            @click="removeExperience(index)"
-            size="sm"
-            variant="ghost"
-            class="remove-btn"
+    <!-- Experience List -->
+    <div v-if="formData.workExperience.length > 0" class="experiences-list">
+      <Card
+        v-for="(exp, index) in formData.workExperience"
+        :key="index"
+        class="experience-card"
+      >
+        <CardContent class="pt-6">
+          <div class="card-header">
+            <div>
+              <h3 class="experience-title">{{ exp.jobTitle }}</h3>
+              <p class="experience-company">{{ exp.companyName }}</p>
+              <p class="experience-meta">
+                {{ exp.location }} • {{ exp.employmentType }} •
+                {{ formatDate(exp.startDate) }} -
+                {{ exp.currentlyWorking ? "Present" : formatDate(exp.endDate) }}
+              </p>
+            </div>
+            <Button
+              @click="removeExperience(index)"
+              size="sm"
+              variant="ghost"
+              class="delete-btn"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 6h18" />
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+              </svg>
+            </Button>
+          </div>
+
+          <!-- Responsibilities -->
+          <div
+            v-if="exp.responsibilities && exp.responsibilities.length > 0"
+            class="experience-section"
           >
-            ✕ Remove
-          </Button>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Job Title <span class="required">*</span></label>
-            <input
-              v-model="exp.jobTitle"
-              type="text"
-              required
-              placeholder="Senior Software Engineer"
-            />
+            <h4 class="section-label">Responsibilities</h4>
+            <ul class="experience-list">
+              <li v-for="(item, idx) in exp.responsibilities" :key="idx">
+                {{ item }}
+              </li>
+            </ul>
           </div>
 
-          <div class="form-group">
-            <label>Company Name <span class="required">*</span></label>
-            <input
-              v-model="exp.companyName"
-              type="text"
-              required
-              placeholder="Tech Company Inc."
-            />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Employment Type</label>
-            <select v-model="exp.employmentType">
-              <option value="Full-time">Full-time</option>
-              <option value="Part-time">Part-time</option>
-              <option value="Contract">Contract</option>
-              <option value="Internship">Internship</option>
-              <option value="Freelance">Freelance</option>
-            </select>
+          <!-- Achievements -->
+          <div
+            v-if="exp.achievements && exp.achievements.length > 0"
+            class="experience-section"
+          >
+            <h4 class="section-label">Achievements</h4>
+            <ul class="experience-list">
+              <li v-for="(item, idx) in exp.achievements" :key="idx">
+                {{ item }}
+              </li>
+            </ul>
           </div>
 
-          <div class="form-group">
-            <label>Location</label>
-            <input
-              v-model="exp.location"
-              type="text"
-              placeholder="San Francisco, CA"
-            />
+          <!-- Technologies -->
+          <div
+            v-if="exp.technologies && exp.technologies.length > 0"
+            class="experience-section"
+          >
+            <h4 class="section-label">Technologies</h4>
+            <div class="tech-tags">
+              <span
+                v-for="(tech, idx) in exp.technologies"
+                :key="idx"
+                class="tech-tag"
+              >
+                {{ tech }}
+              </span>
+            </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
+    </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Start Date <span class="required">*</span></label>
-            <input v-model="exp.startDate" type="month" required />
-          </div>
-
-          <div class="form-group">
-            <label>End Date</label>
-            <input
-              v-model="exp.endDate"
-              type="month"
-              :disabled="exp.currentlyWorking"
-              :placeholder="exp.currentlyWorking ? 'Present' : ''"
-            />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="checkbox-label">
-            <input
-              v-model="exp.currentlyWorking"
-              type="checkbox"
-              @change="() => exp.currentlyWorking && (exp.endDate = '')"
-            />
-            <span>I currently work here</span>
-          </label>
-        </div>
-
-        <div class="form-group">
-          <label>Responsibilities</label>
-          <div class="list-input">
-            <textarea
-              v-model="exp.responsibilitiesText"
-              rows="4"
-              placeholder="• Led development of customer-facing web application&#10;• Managed team of 5 engineers&#10;• Implemented CI/CD pipeline"
-              @input="updateResponsibilities(exp)"
-            ></textarea>
-            <small class="help-text"
-              >Start each item with a bullet point (•) or dash (-)</small
-            >
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Achievements</label>
-          <div class="list-input">
-            <textarea
-              v-model="exp.achievementsText"
-              rows="4"
-              placeholder="• Improved application performance by 40%&#10;• Reduced deployment time from 2 hours to 15 minutes&#10;• Launched product feature used by 100k+ users"
-              @input="updateAchievements(exp)"
-            ></textarea>
-            <small class="help-text"
-              >Start each item with a bullet point (•) or dash (-)</small
-            >
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Technologies Used</label>
-          <input
-            v-model="exp.technologiesText"
-            type="text"
-            placeholder="React, Node.js, PostgreSQL, AWS, Docker"
-            @input="updateTechnologies(exp)"
-          />
-          <small class="help-text">Separate with commas</small>
-        </div>
-      </CardContent>
-    </Card>
-
-    <div v-if="formData.workExperience.length === 0" class="empty-state">
+    <div v-else class="empty-state">
       <p>
         No work experience added yet. Click "Add Experience" to get started.
       </p>
@@ -161,9 +260,18 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from "vue";
+import { defineProps, defineEmits, ref } from "vue";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const props = defineProps({
   modelValue: {
@@ -175,9 +283,24 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue"]);
 
 const formData = props.modelValue;
+const experienceDialogOpen = ref(false);
+const isSaving = ref(false);
 
-function addExperience() {
-  formData.workExperience.push({
+const experienceForm = ref({
+  jobTitle: "",
+  companyName: "",
+  employmentType: "Full-time",
+  location: "",
+  startDate: "",
+  endDate: "",
+  currentlyWorking: false,
+  responsibilitiesText: "",
+  achievementsText: "",
+  technologiesText: "",
+});
+
+function resetExperienceForm() {
+  experienceForm.value = {
     jobTitle: "",
     companyName: "",
     employmentType: "Full-time",
@@ -185,38 +308,88 @@ function addExperience() {
     startDate: "",
     endDate: "",
     currentlyWorking: false,
-    responsibilities: [],
     responsibilitiesText: "",
-    achievements: [],
     achievementsText: "",
-    technologies: [],
     technologiesText: "",
-  });
+  };
+}
+
+function handleCurrentlyWorkingChange() {
+  if (experienceForm.value.currentlyWorking) {
+    experienceForm.value.endDate = "";
+  }
+}
+
+async function onExperienceSubmit(event) {
+  event.preventDefault();
+  isSaving.value = true;
+
+  try {
+    // Parse text fields into arrays
+    const responsibilities = experienceForm.value.responsibilitiesText
+      ? experienceForm.value.responsibilitiesText
+          .split("\n")
+          .map((line) => line.trim().replace(/^[•\-]\s*/, ""))
+          .filter((line) => line.length > 0)
+      : [];
+
+    const achievements = experienceForm.value.achievementsText
+      ? experienceForm.value.achievementsText
+          .split("\n")
+          .map((line) => line.trim().replace(/^[•\-]\s*/, ""))
+          .filter((line) => line.length > 0)
+      : [];
+
+    const technologies = experienceForm.value.technologiesText
+      ? experienceForm.value.technologiesText
+          .split(",")
+          .map((tech) => tech.trim())
+          .filter((tech) => tech.length > 0)
+      : [];
+
+    const experienceData = {
+      ...experienceForm.value,
+      responsibilities,
+      achievements,
+      technologies,
+    };
+
+    // Save to backend
+    const response = await fetch("http://localhost:8000/experience", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ experience: experienceData }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to save experience");
+    }
+
+    // Add to local state
+    formData.workExperience.push(experienceData);
+
+    // Reset form and close dialog
+    resetExperienceForm();
+    experienceDialogOpen.value = false;
+  } catch (error) {
+    console.error("Error saving experience:", error);
+    alert("Failed to save experience. Please try again.");
+  } finally {
+    isSaving.value = false;
+  }
 }
 
 function removeExperience(index) {
   formData.workExperience.splice(index, 1);
 }
 
-function updateResponsibilities(exp) {
-  exp.responsibilities = exp.responsibilitiesText
-    .split("\n")
-    .map((line) => line.trim().replace(/^[•\-]\s*/, ""))
-    .filter((line) => line.length > 0);
-}
-
-function updateAchievements(exp) {
-  exp.achievements = exp.achievementsText
-    .split("\n")
-    .map((line) => line.trim().replace(/^[•\-]\s*/, ""))
-    .filter((line) => line.length > 0);
-}
-
-function updateTechnologies(exp) {
-  exp.technologies = exp.technologiesText
-    .split(",")
-    .map((tech) => tech.trim())
-    .filter((tech) => tech.length > 0);
+function formatDate(dateString) {
+  if (!dateString) return "";
+  const [year, month] = dateString.split("-");
+  const date = new Date(year, month - 1);
+  return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
 function fillDummyData() {
@@ -390,6 +563,130 @@ function fillDummyData() {
 
 .remove-btn {
   color: #ef4444;
+}
+
+.delete-btn {
+  color: #ef4444;
+  padding: 8px;
+  height: auto;
+}
+
+.delete-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Experience List */
+.experiences-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.experience-card {
+  border: 1px solid #e5e7eb;
+  transition: border-color 0.2s ease;
+}
+
+.experience-card:hover {
+  border-color: #d1d5db;
+}
+
+.experience-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+}
+
+.experience-company {
+  font-size: 15px;
+  font-weight: 500;
+  color: #3b82f6;
+  margin: 0 0 4px 0;
+}
+
+.experience-meta {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.experience-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.section-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.experience-list {
+  margin: 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.experience-list li {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+.tech-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tech-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background-color: #eff6ff;
+  color: #1e40af;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Dialog Form Styles */
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.dialog-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.help-text {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
 }
 
 .form-row {

@@ -11,11 +11,13 @@ export function useFormField() {
   const fieldState = computed(() => {
     const error = fieldContext?.errorMessage?.value;
     const isDirty = fieldContext?.meta?.value?.dirty;
+    const isTouched = fieldContext?.meta?.value?.touched;
     const isValid = fieldContext?.meta?.value?.valid;
 
     return {
       invalid: !!error,
       isDirty: !!isDirty,
+      isTouched: !!isTouched,
       error: { message: error },
       isValid: !!isValid,
     };
