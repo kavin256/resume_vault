@@ -6,51 +6,43 @@
         Welcome — manage your master profile and generate tailored resumes.
       </p>
     </div>
-  
+
     <!-- Summary stats -->
     <div class="stats-grid">
-      <div class="stat-card card">
-        <div class="stat-value">12</div>
-        <div class="stat-label">Resumes Generated</div>
-      </div>
+      <Card>
+        <CardContent class="pt-6">
+          <div class="stat-value">{{ applications.length }}</div>
+          <div class="stat-label">Total Applications</div>
+        </CardContent>
+      </Card>
 
-      <div class="stat-card card">
-        <div class="stat-value">9</div>
-        <div class="stat-label">Applications Submitted</div>
-      </div>
+      <Card>
+        <CardContent class="pt-6">
+          <div class="stat-value">{{ recentApplications }}</div>
+          <div class="stat-label">Recent (Last 30 Days)</div>
+        </CardContent>
+      </Card>
 
-      <div class="stat-card card">
-        <div class="stat-value">3</div>
-        <div class="stat-label">Saved Profiles</div>
-      </div>
+      <Card>
+        <CardContent class="pt-6">
+          <div class="stat-value">{{ applications.length }}</div>
+          <div class="stat-label">Companies Applied</div>
+        </CardContent>
+      </Card>
     </div>
 
     <!-- Recent application history -->
-    <div class="card applications-card">
-      <h2 class="section-title">Recent Applications</h2>
-      <div class="applications-list">
-        <div class="app-row">
-          <div class="app-company">TechCorp Inc.</div>
-          <div class="app-role">Senior Full-Stack Engineer</div>
-          <div class="app-date">2025-12-15</div>
-          <Button variant="outline" size="sm" @click="openDrawer(applications[0])">Details</Button>
-        </div>
-
-        <div class="app-row">
-          <div class="app-company">InnovateLab</div>
-          <div class="app-role">Frontend Engineer</div>
-          <div class="app-date">2025-11-28</div>
-          <Button variant="outline" size="sm" @click="openDrawer(applications[1])">Details</Button>
-        </div>
-
-        <div class="app-row">
-          <div class="app-company">StartupCo</div>
-          <div class="app-role">Backend Engineer</div>
-          <div class="app-date">2025-10-05</div>
-          <Button variant="outline" size="sm" @click="openDrawer(applications[2])">Details</Button>
-        </div>
-      </div>
-    </div>
+    <Card>
+      <CardContent class="pt-6">
+        <h2 class="section-title">Recent Applications</h2>
+        <DataTable
+          :columns="columns"
+          :data="applications"
+          search-key="company"
+          filter-label="Search by company..."
+        />
+      </CardContent>
+    </Card>
 
     <!-- Drawer using shadcn-vue Sheet -->
     <Sheet v-model:open="drawerOpen">
@@ -84,7 +76,12 @@
             </div>
             <div class="detail-row">
               <span class="detail-label">Posting Link</span>
-              <a :href="selectedApp.postingLink" target="_blank" class="detail-link">View Posting →</a>
+              <a
+                :href="selectedApp.postingLink"
+                target="_blank"
+                class="detail-link"
+                >View Posting →</a
+              >
             </div>
           </div>
 
@@ -109,45 +106,51 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Button } from '@/components/ui/button'
+import { ref, computed, onMounted, onUnmounted, h } from "vue";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from '@/components/ui/sheet'
+} from "@/components/ui/sheet";
+import DataTable from "@/components/DataTable.vue";
+import { ArrowUpDown } from "lucide-vue-next";
 
-const drawerOpen = ref(false)
-const selectedApp = ref(null)
-const windowWidth = ref(window.innerWidth)
+const drawerOpen = ref(false);
+const selectedApp = ref(null);
+const windowWidth = ref(window.innerWidth);
 
 // Update window width on resize
 const updateWidth = () => {
-  windowWidth.value = window.innerWidth
-}
+  windowWidth.value = window.innerWidth;
+};
 
 onMounted(() => {
-  window.addEventListener('resize', updateWidth)
-})
+  window.addEventListener("resize", updateWidth);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateWidth)
-})
+  window.removeEventListener("resize", updateWidth);
+});
 
 // Responsive drawer side: bottom for mobile, right for desktop
 const drawerSide = computed(() => {
-  return windowWidth.value < 768 ? 'bottom' : 'right'
-})
+  return windowWidth.value < 768 ? "bottom" : "right";
+});
 
 // Dummy application data
 const applications = [
   {
-    company: 'TechCorp Inc.',
-    position: 'Senior Full-Stack Engineer',
-    jobId: 'REQ-2024-SE-4567',
-    postingLink: 'https://techcorp.com/careers/senior-fullstack-engineer-4567',
+    id: 1,
+    company: "TechCorp Inc.",
+    position: "Senior Full-Stack Engineer",
+    status: "Applied",
+    appliedDate: "2025-12-15",
+    jobId: "REQ-2024-SE-4567",
+    postingLink: "https://techcorp.com/careers/senior-fullstack-engineer-4567",
     jobDescription: `We are seeking an experienced Senior Full-Stack Software Engineer to join our growing engineering team. You will be responsible for designing, developing, and maintaining scalable web applications that serve millions of users worldwide.
 
 Key Responsibilities:
@@ -162,13 +165,16 @@ Required Qualifications:
 • Strong proficiency in JavaScript/TypeScript and Python
 • Experience with modern frontend frameworks (React, Vue.js, or Angular)
 • Solid understanding of backend technologies (Node.js, FastAPI, Django)`,
-    dateGenerated: '2025-12-15'
+    dateGenerated: "2025-12-15",
   },
   {
-    company: 'InnovateLab',
-    position: 'Frontend Engineer',
-    jobId: 'JOB-2024-FE-123',
-    postingLink: 'https://innovatelab.com/careers/frontend-engineer',
+    id: 2,
+    company: "InnovateLab",
+    position: "Frontend Engineer",
+    status: "Interview",
+    appliedDate: "2025-11-28",
+    jobId: "JOB-2024-FE-123",
+    postingLink: "https://innovatelab.com/careers/frontend-engineer",
     jobDescription: `Join our frontend team to build beautiful, responsive user interfaces using modern web technologies. You'll work closely with designers to bring creative visions to life.
 
 Requirements:
@@ -176,13 +182,16 @@ Requirements:
 • Expert knowledge of React or Vue.js
 • Strong CSS and responsive design skills
 • Experience with state management libraries`,
-    dateGenerated: '2025-11-28'
+    dateGenerated: "2025-11-28",
   },
   {
-    company: 'StartupCo',
-    position: 'Backend Engineer',
-    jobId: 'HIRE-2024-BE-789',
-    postingLink: 'https://startupco.com/jobs/backend-engineer',
+    id: 3,
+    company: "StartupCo",
+    position: "Backend Engineer",
+    status: "Rejected",
+    appliedDate: "2025-10-05",
+    jobId: "HIRE-2024-BE-789",
+    postingLink: "https://startupco.com/jobs/backend-engineer",
     jobDescription: `We're looking for a talented backend engineer to help us scale our infrastructure and build robust APIs. You'll be working on challenging problems in distributed systems.
 
 What you'll do:
@@ -190,13 +199,100 @@ What you'll do:
 • Optimize database performance
 • Implement secure authentication and authorization
 • Deploy and monitor production systems`,
-    dateGenerated: '2025-10-05'
-  }
-]
+    dateGenerated: "2025-10-05",
+  },
+  {
+    id: 4,
+    company: "CloudSystems",
+    position: "DevOps Engineer",
+    status: "Applied",
+    appliedDate: "2025-12-10",
+    jobId: "CLOUD-2024-DEV-456",
+    postingLink: "https://cloudsystems.com/careers/devops",
+    jobDescription:
+      "Build and maintain cloud infrastructure, CI/CD pipelines, and monitoring systems.",
+    dateGenerated: "2025-12-10",
+  },
+  {
+    id: 5,
+    company: "DataTech Solutions",
+    position: "Data Engineer",
+    status: "Interview",
+    appliedDate: "2025-11-15",
+    jobId: "DATA-2024-ENG-321",
+    postingLink: "https://datatech.com/jobs/data-engineer",
+    jobDescription:
+      "Design and implement data pipelines, ETL processes, and data warehousing solutions.",
+    dateGenerated: "2025-11-15",
+  },
+];
+
+// Calculate recent applications (last 30 days)
+const recentApplications = computed(() => {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  return applications.filter(
+    (app) => new Date(app.appliedDate) >= thirtyDaysAgo
+  ).length;
+});
+
+// Define table columns
+const columns = [
+  {
+    accessorKey: "company",
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+        },
+        () => ["Company", h(ArrowUpDown, { class: "ml-2 h-4 w-4" })]
+      );
+    },
+    cell: ({ row }) =>
+      h("div", { class: "font-medium" }, row.getValue("company")),
+  },
+  {
+    accessorKey: "position",
+    header: "Position",
+    cell: ({ row }) => h("div", row.getValue("position")),
+  },
+  {
+    accessorKey: "appliedDate",
+    header: ({ column }) => {
+      return h(
+        Button,
+        {
+          variant: "ghost",
+          onClick: () => column.toggleSorting(column.getIsSorted() === "asc"),
+        },
+        () => ["Date Applied", h(ArrowUpDown, { class: "ml-2 h-4 w-4" })]
+      );
+    },
+    cell: ({ row }) => h("div", row.getValue("appliedDate")),
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const app = row.original;
+      return h(
+        Button,
+        {
+          variant: "outline",
+          size: "sm",
+          onClick: () => openDrawer(app),
+        },
+        () => "Details"
+      );
+    },
+  },
+];
 
 function openDrawer(app) {
-  selectedApp.value = app
-  drawerOpen.value = true
+  selectedApp.value = app;
+  drawerOpen.value = true;
 }
 </script>
 
@@ -235,13 +331,6 @@ function openDrawer(app) {
   margin-bottom: 20px;
 }
 
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 18px;
-}
-
 .stat-value {
   font-size: 28px;
   font-weight: 700;
@@ -254,14 +343,13 @@ function openDrawer(app) {
   color: #64748b;
 }
 
-/* Applications list */
-.applications-card { padding: 18px; }
-.applications-list { display: flex; flex-direction: column; gap: 10px; }
-.app-row { display: grid; grid-template-columns: 1.6fr 2fr 1fr auto; gap: 12px; align-items: center; padding: 10px 8px; border-radius: 8px; }
-.app-row:nth-child(odd) { background: #fbfdff; }
-.app-company { font-weight: 600; color: #0f172a; }
-.app-role { color: #334155; font-size: 14px; }
-.app-date { color: #64748b; font-size: 13px; }
+/* Applications section */
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+}
 
 /* Drawer content */
 .drawer-content {
@@ -336,8 +424,15 @@ function openDrawer(app) {
 }
 
 @media (max-width: 900px) {
-  .stats-grid { grid-template-columns: 1fr; }
-  .app-row { grid-template-columns: 1fr; gap: 8px; }
-  .app-date { justify-self: start; }
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .app-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .app-date {
+    justify-self: start;
+  }
 }
 </style>
