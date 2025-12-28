@@ -19,86 +19,205 @@
       <CardContent class="pt-6">
         <div class="section-header">
           <h3 class="form-section-title">Education</h3>
-          <Button @click="addEducation" size="sm" variant="outline">
-            + Add Education
-          </Button>
+          <Dialog
+            :open="educationDialogOpen"
+            @update:open="onEducationDialogChange"
+          >
+            <DialogTrigger>
+              <Button size="sm" variant="outline"> + Add Education </Button>
+            </DialogTrigger>
+            <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{{
+                  editingEducationIndex !== null
+                    ? "Edit Education"
+                    : "Add Education"
+                }}</DialogTitle>
+                <DialogDescription>
+                  {{
+                    editingEducationIndex !== null
+                      ? "Update your educational background and qualifications."
+                      : "Add your educational background and qualifications."
+                  }}
+                </DialogDescription>
+              </DialogHeader>
+              <form @submit="onEducationSubmit" class="dialog-form">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Institution <span class="required">*</span></label>
+                    <input
+                      v-model="educationForm.institution"
+                      type="text"
+                      required
+                      placeholder="Stanford University"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Degree <span class="required">*</span></label>
+                    <input
+                      v-model="educationForm.degree"
+                      type="text"
+                      required
+                      placeholder="Bachelor of Science"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Field of Study</label>
+                    <input
+                      v-model="educationForm.fieldOfStudy"
+                      type="text"
+                      placeholder="Computer Science"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Grade/GPA</label>
+                    <input
+                      v-model="educationForm.grade"
+                      type="text"
+                      placeholder="3.8/4.0"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Start Year</label>
+                    <input
+                      v-model="educationForm.startYear"
+                      type="text"
+                      placeholder="2014"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>End Year</label>
+                    <input
+                      v-model="educationForm.endYear"
+                      type="text"
+                      placeholder="2018"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Description</label>
+                  <textarea
+                    v-model="educationForm.description"
+                    rows="3"
+                    placeholder="Relevant coursework, honors, activities..."
+                    class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  ></textarea>
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    @click="educationDialogOpen = false"
+                    variant="outline"
+                    type="button"
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" :disabled="isSavingEducation">
+                    {{
+                      isSavingEducation
+                        ? "Saving..."
+                        : editingEducationIndex !== null
+                        ? "Update Education"
+                        : "Add Education"
+                    }}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        <div
-          v-for="(edu, index) in formData.education"
-          :key="index"
-          class="repeatable-item"
-        >
-          <div class="item-header">
-            <span class="item-number">{{ index + 1 }}</span>
-            <Button
-              @click="removeEducation(index)"
-              size="sm"
-              variant="ghost"
-              class="remove-btn"
-            >
-              ✕
-            </Button>
-          </div>
+        <!-- Education List -->
+        <div v-if="formData.education.length > 0" class="education-list">
+          <Card
+            v-for="(edu, index) in formData.education"
+            :key="index"
+            class="education-card"
+          >
+            <CardContent class="pt-6">
+              <div class="card-header">
+                <h3 class="education-title">{{ edu.degree }}</h3>
+                <div class="action-buttons">
+                  <Button
+                    @click="editEducation(index)"
+                    size="sm"
+                    variant="ghost"
+                    class="edit-btn"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path
+                        d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"
+                      />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                  </Button>
+                  <Button
+                    @click="removeEducation(index)"
+                    size="sm"
+                    variant="ghost"
+                    class="delete-btn"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M3 6h18" />
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                    </svg>
+                  </Button>
+                </div>
+              </div>
+              <p class="education-institution">{{ edu.institution }}</p>
+              <p class="education-meta">
+                {{ edu.fieldOfStudy }}
+                <span v-if="edu.grade"> • {{ edu.grade }}</span>
+                <span v-if="edu.startYear || edu.endYear">
+                  • {{ edu.startYear }} - {{ edu.endYear }}
+                </span>
+              </p>
+              <p v-if="edu.description" class="education-description">
+                {{ edu.description }}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Institution <span class="required">*</span></label>
-              <input
-                v-model="edu.institution"
-                type="text"
-                required
-                placeholder="Stanford University"
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Degree <span class="required">*</span></label>
-              <input
-                v-model="edu.degree"
-                type="text"
-                required
-                placeholder="Bachelor of Science"
-              />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Field of Study</label>
-              <input
-                v-model="edu.fieldOfStudy"
-                type="text"
-                placeholder="Computer Science"
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Grade/GPA</label>
-              <input v-model="edu.grade" type="text" placeholder="3.8/4.0" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Start Year</label>
-              <input v-model="edu.startYear" type="text" placeholder="2014" />
-            </div>
-
-            <div class="form-group">
-              <label>End Year</label>
-              <input v-model="edu.endYear" type="text" placeholder="2018" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Description</label>
-            <textarea
-              v-model="edu.description"
-              rows="2"
-              placeholder="Relevant coursework, honors, activities..."
-            ></textarea>
-          </div>
+        <div v-else class="empty-state">
+          <p>No education added yet. Click "Add Education" to get started.</p>
         </div>
       </CardContent>
     </Card>
@@ -294,9 +413,18 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from "vue";
+import { defineProps, defineEmits, ref } from "vue";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const props = defineProps({
   modelValue: {
@@ -310,6 +438,78 @@ const emit = defineEmits(["update:modelValue"]);
 const formData = props.modelValue;
 
 // Education
+const educationDialogOpen = ref(false);
+const isSavingEducation = ref(false);
+const editingEducationIndex = ref(null);
+
+const educationForm = ref({
+  institution: "",
+  degree: "",
+  fieldOfStudy: "",
+  startYear: "",
+  endYear: "",
+  grade: "",
+  description: "",
+});
+
+function resetEducationForm() {
+  educationForm.value = {
+    institution: "",
+    degree: "",
+    fieldOfStudy: "",
+    startYear: "",
+    endYear: "",
+    grade: "",
+    description: "",
+  };
+  editingEducationIndex.value = null;
+}
+
+async function onEducationSubmit(event) {
+  event.preventDefault();
+  isSavingEducation.value = true;
+
+  try {
+    if (editingEducationIndex.value !== null) {
+      // Update existing education
+      formData.education[editingEducationIndex.value] = {
+        ...educationForm.value,
+      };
+    } else {
+      // Add new education
+      formData.education.push({ ...educationForm.value });
+    }
+
+    // Reset form and close dialog
+    resetEducationForm();
+    educationDialogOpen.value = false;
+  } catch (error) {
+    console.error("Error saving education:", error);
+    alert("Failed to save education. Please try again.");
+  } finally {
+    isSavingEducation.value = false;
+  }
+}
+
+function editEducation(index) {
+  const edu = formData.education[index];
+  educationForm.value = { ...edu };
+  editingEducationIndex.value = index;
+  educationDialogOpen.value = true;
+}
+
+function onEducationDialogChange(isOpen) {
+  educationDialogOpen.value = isOpen;
+  // Reset form when opening dialog for adding (not editing)
+  if (isOpen && editingEducationIndex.value === null) {
+    resetEducationForm();
+  }
+  // Reset editing state when closing dialog
+  if (!isOpen) {
+    editingEducationIndex.value = null;
+  }
+}
+
 function addEducation() {
   formData.education.push({
     institution: "",
@@ -576,6 +776,105 @@ function fillDummyData() {
 .remove-btn {
   color: #ef4444;
   flex-shrink: 0;
+}
+
+/* Education List */
+.education-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.education-card {
+  border: 1px solid #e5e7eb;
+  transition: border-color 0.2s ease;
+}
+
+.education-card:hover {
+  border-color: #d1d5db;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.education-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.education-institution {
+  font-size: 15px;
+  font-weight: 500;
+  color: #3b82f6;
+  margin: 0 0 4px 0;
+}
+
+.education-meta {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 8px 0;
+}
+
+.education-description {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 8px 0 0 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.edit-btn {
+  color: #3b82f6;
+  padding: 8px;
+  height: auto;
+}
+
+.edit-btn:hover {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.delete-btn {
+  color: #ef4444;
+  padding: 8px;
+  height: auto;
+}
+
+.delete-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Dialog Form */
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.dialog-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 
 @media (max-width: 768px) {
