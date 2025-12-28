@@ -124,15 +124,20 @@
 
 <script setup>
 import { useRouter } from "vue-router";
+import { useAuth } from "@clerk/vue";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const router = useRouter();
+const { isSignedIn } = useAuth();
 
 function goToAuth() {
-  // For now, redirect to home (vault) page
-  // TODO: Replace with actual auth page route when implemented
-  router.push("/home");
+  // If user is already signed in, go to home, otherwise go to sign-in
+  if (isSignedIn.value) {
+    router.push("/home");
+  } else {
+    router.push("/sign-in");
+  }
 }
 </script>
 

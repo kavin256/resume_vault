@@ -14,8 +14,13 @@ import AppNav from "./components/AppNav.vue";
 
 const route = useRoute();
 
-// Hide navigation on landing page
-const isLandingPage = computed(() => route.name === "landing");
+// Hide navigation on landing page and auth pages
+const isLandingPage = computed(
+  () =>
+    route.name === "landing" ||
+    route.name === "sign-in" ||
+    route.name === "sign-up"
+);
 
 // Shared state - provided to all views
 const masterProfile = ref({

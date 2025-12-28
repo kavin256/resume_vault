@@ -78,7 +78,7 @@
       </div>
 
       <div class="nav-links">
-        <router-link to="/" class="nav-link" @click="closeMobileMenu">
+        <router-link to="/home" class="nav-link" @click="closeMobileMenu">
           <svg
             width="20"
             height="20"
@@ -91,7 +91,7 @@
               d="M3 11l9-7 9 7v8a2 2 0 0 1-2 2h-4V13H9v8H5a2 2 0 0 1-2-2v-8z"
             ></path>
           </svg>
-          <span>Home</span>
+          <span>Vault</span>
         </router-link>
         <router-link to="/profile" class="nav-link" @click="closeMobileMenu">
           <svg
@@ -124,15 +124,93 @@
           <span>Generate Resume</span>
         </router-link>
       </div>
+
+      <!-- User Profile Section -->
+      <div class="nav-footer">
+        <div class="user-section" v-if="user" @click="handleUserClick">
+          <div class="user-info">
+            <div class="user-avatar">
+              <img
+                v-if="user.imageUrl"
+                :src="user.imageUrl"
+                :alt="displayName"
+                class="avatar-image"
+              />
+              <svg
+                v-else
+                width="32"
+                height="32"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                class="avatar-icon"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div class="user-details">
+              <div class="user-name">{{ displayName }}</div>
+              <div class="user-email" v-if="user.primaryEmailAddress">
+                {{ user.primaryEmailAddress.emailAddress }}
+              </div>
+            </div>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              class="chevron-icon"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="user-button-hidden">
+            <UserButton :after-sign-out-url="'/'" />
+          </div>
+        </div>
+      </div>
     </div>
   </nav>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { Button } from "@/components/ui/button";
+import { UserButton, useUser } from "@clerk/vue";
 
 const mobileMenuOpen = ref(false);
+const { user } = useUser();
+
+const displayName = computed(() => {
+  if (!user.value) return "";
+
+  const firstName = user.value.firstName;
+  const lastName = user.value.lastName;
+
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
+  } else if (firstName) {
+    return firstName;
+  } else if (lastName) {
+    return lastName;
+  } else if (user.value.primaryEmailAddress) {
+    return user.value.primaryEmailAddress.emailAddress;
+  }
+
+  return "User";
+});
+
+function handleUserClick() {
+  // Trigger click on the hidden UserButton
+  const userButton = document.querySelector(".user-button-hidden button");
+  if (userButton) {
+    userButton.click();
+  }
+}
 
 function toggleMobileMenu() {
   mobileMenuOpen.value = !mobileMenuOpen.value;
@@ -223,6 +301,92 @@ function closeMobileMenu() {
 .nav-link.router-link-active {
   color: #3b82f6;
   background: #eff6ff;
+}
+
+/* User Footer Section */
+.nav-footer {
+  margin-top: auto;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.user-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  cursor: pointer;
+  position: relative;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.user-section:hover .user-info {
+  background: #e5e7eb;
+}
+
+.user-button-hidden {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-icon {
+  color: #64748b;
+}
+
+.user-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-email {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron-icon {
+  color: #64748b;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 /* Mobile Styles */
