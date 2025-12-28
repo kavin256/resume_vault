@@ -147,36 +147,50 @@
                   Add a new language and your proficiency level.
                 </DialogDescription>
               </DialogHeader>
-              <div class="dialog-form">
-                <div class="form-group">
-                  <label>Language <span class="required">*</span></label>
-                  <input
-                    v-model="newLanguage.language"
-                    type="text"
-                    placeholder="e.g., English, Spanish, Mandarin"
-                  />
-                </div>
-                <div class="form-group">
-                  <label>Proficiency <span class="required">*</span></label>
-                  <select v-model="newLanguage.proficiency">
-                    <option value="Basic">Basic</option>
-                    <option value="Conversational">Conversational</option>
-                    <option value="Professional">Professional</option>
-                    <option value="Native">Native</option>
-                  </select>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button @click="languageDialogOpen = false" variant="outline">
-                  Cancel
-                </Button>
-                <Button
-                  @click="addLanguage"
-                  :disabled="!newLanguage.language.trim()"
-                >
-                  Add Language
-                </Button>
-              </DialogFooter>
+              <form @submit="onLanguageSubmit" class="dialog-form">
+                <FormField v-slot="{ componentField }" name="language">
+                  <FormItem>
+                    <FormLabel
+                      >Language <span class="required">*</span></FormLabel
+                    >
+                    <FormInput
+                      type="text"
+                      placeholder="e.g., English, Spanish, Mandarin"
+                      v-bind="componentField"
+                    />
+                    <FormMessage />
+                  </FormItem>
+                </FormField>
+
+                <FormField v-slot="{ componentField }" name="proficiency">
+                  <FormItem>
+                    <FormLabel
+                      >Proficiency <span class="required">*</span></FormLabel
+                    >
+                    <select
+                      v-bind="componentField"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="Basic">Basic</option>
+                      <option value="Conversational">Conversational</option>
+                      <option value="Professional">Professional</option>
+                      <option value="Native">Native</option>
+                    </select>
+                    <FormMessage />
+                  </FormItem>
+                </FormField>
+
+                <DialogFooter>
+                  <Button
+                    @click="languageDialogOpen = false"
+                    variant="outline"
+                    type="button"
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit"> Add Language </Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
@@ -226,6 +240,9 @@
 
 <script setup>
 import { defineProps, defineEmits, ref } from "vue";
+import { useForm } from "vee-validate";
+import { toTypedSchema } from "@vee-validate/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -237,6 +254,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormInput,
+} from "@/components/ui/form";
 
 const props = defineProps({
   modelValue: {
@@ -250,25 +274,31 @@ const emit = defineEmits(["update:modelValue"]);
 const formData = props.modelValue;
 
 const languageDialogOpen = ref(false);
-const newLanguage = ref({
-  language: "",
-  proficiency: "Professional",
+
+// Zod schema for language form
+const languageSchema = toTypedSchema(
+  z.object({
+    language: z.string().min(1, "Language is required"),
+    proficiency: z.enum(["Basic", "Conversational", "Professional", "Native"]),
+  })
+);
+
+const { handleSubmit, resetForm, setValues } = useForm({
+  validationSchema: languageSchema,
+  initialValues: {
+    language: "",
+    proficiency: "Professional",
+  },
 });
 
-function addLanguage() {
-  if (newLanguage.value.language.trim()) {
-    formData.languages.push({
-      language: newLanguage.value.language,
-      proficiency: newLanguage.value.proficiency,
-    });
-    // Reset form
-    newLanguage.value = {
-      language: "",
-      proficiency: "Professional",
-    };
-    languageDialogOpen.value = false;
-  }
-}
+const onLanguageSubmit = handleSubmit((values) => {
+  formData.languages.push({
+    language: values.language,
+    proficiency: values.proficiency,
+  });
+  resetForm();
+  languageDialogOpen.value = false;
+});
 
 function removeLanguage(index) {
   formData.languages.splice(index, 1);
