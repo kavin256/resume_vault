@@ -145,75 +145,77 @@
 
         <!-- Education List -->
         <div v-if="formData.education.length > 0" class="education-list">
-          <Card
+          <div
             v-for="(edu, index) in formData.education"
             :key="index"
-            class="education-card"
+            class="education-item"
           >
-            <CardContent class="pt-6">
-              <div class="card-header">
-                <h3 class="education-title">{{ edu.degree }}</h3>
-                <div class="action-buttons">
-                  <Button
-                    @click="editEducation(index)"
-                    size="sm"
-                    variant="ghost"
-                    class="edit-btn"
+            <div class="education-header">
+              <h3 class="education-title">{{ edu.degree }}</h3>
+              <div class="action-buttons">
+                <Button
+                  @click="editEducation(index)"
+                  size="sm"
+                  variant="ghost"
+                  class="edit-btn"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path
-                        d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"
-                      />
-                      <path d="m15 5 4 4" />
-                    </svg>
-                  </Button>
-                  <Button
-                    @click="removeEducation(index)"
-                    size="sm"
-                    variant="ghost"
-                    class="delete-btn"
+                    <path
+                      d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"
+                    />
+                    <path d="m15 5 4 4" />
+                  </svg>
+                </Button>
+                <Button
+                  @click="removeEducation(index)"
+                  size="sm"
+                  variant="ghost"
+                  class="delete-btn"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M3 6h18" />
-                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                    </svg>
-                  </Button>
-                </div>
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                  </svg>
+                </Button>
               </div>
-              <p class="education-institution">{{ edu.institution }}</p>
-              <p class="education-meta">
-                {{ edu.fieldOfStudy }}
-                <span v-if="edu.grade"> • {{ edu.grade }}</span>
-                <span v-if="edu.startYear || edu.endYear">
-                  • {{ edu.startYear }} - {{ edu.endYear }}
-                </span>
-              </p>
-              <p v-if="edu.description" class="education-description">
-                {{ edu.description }}
-              </p>
-            </CardContent>
-          </Card>
+            </div>
+            <p class="education-institution">{{ edu.institution }}</p>
+            <p class="education-meta">
+              {{ edu.fieldOfStudy }}
+              <span v-if="edu.grade"> • {{ edu.grade }}</span>
+              <span v-if="edu.startYear || edu.endYear">
+                • {{ edu.startYear }} - {{ edu.endYear }}
+              </span>
+            </p>
+            <p v-if="edu.description" class="education-description">
+              {{ edu.description }}
+            </p>
+            <hr
+              v-if="index < formData.education.length - 1"
+              class="education-divider"
+            />
+          </div>
         </div>
 
         <div v-else class="empty-state">
@@ -227,45 +229,80 @@
       <CardContent class="pt-6">
         <div class="section-header">
           <h3 class="form-section-title">Skills</h3>
-          <Button @click="addSkill" size="sm" variant="outline">
-            + Add Skill
-          </Button>
+          <Dialog
+            :open="skillDialogOpen"
+            @update:open="skillDialogOpen = $event"
+          >
+            <DialogTrigger>
+              <Button size="sm" variant="outline"> + Add Skill </Button>
+            </DialogTrigger>
+            <DialogContent class="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Skill</DialogTitle>
+                <DialogDescription>
+                  Add a skill to your profile.
+                </DialogDescription>
+              </DialogHeader>
+              <form @submit="onSkillSubmit" class="dialog-form">
+                <div class="form-group">
+                  <label>Skill Name <span class="required">*</span></label>
+                  <input
+                    v-model="skillForm.name"
+                    type="text"
+                    required
+                    placeholder="JavaScript"
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    @click="skillDialogOpen = false"
+                    variant="outline"
+                    type="button"
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit">Add Skill</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        <div
-          v-for="(skill, index) in formData.skills"
-          :key="index"
-          class="repeatable-item"
-        >
-          <div class="form-row">
-            <div class="form-group">
-              <label>Skill Name</label>
-              <input
-                v-model="skill.name"
-                type="text"
-                placeholder="JavaScript"
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Proficiency Level</label>
-              <select v-model="skill.level">
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-                <option value="Expert">Expert</option>
-              </select>
-            </div>
-
-            <Button
+        <!-- Skills List -->
+        <div v-if="formData.skills.length > 0" class="skills-container">
+          <div
+            v-for="(skill, index) in formData.skills"
+            :key="index"
+            class="skill-badge"
+          >
+            <span>{{ skill.name }}</span>
+            <button
               @click="removeSkill(index)"
-              size="sm"
-              variant="ghost"
-              class="remove-btn"
+              type="button"
+              class="skill-remove"
             >
-              ✕
-            </Button>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
           </div>
+        </div>
+
+        <div v-else class="empty-state">
+          <p>No skills added yet. Click "Add Skill" to get started.</p>
         </div>
       </CardContent>
     </Card>
@@ -275,77 +312,215 @@
       <CardContent class="pt-6">
         <div class="section-header">
           <h3 class="form-section-title">Certifications</h3>
-          <Button @click="addCertification" size="sm" variant="outline">
-            + Add Certification
-          </Button>
+          <Dialog
+            :open="certificationDialogOpen"
+            @update:open="onCertificationDialogChange"
+          >
+            <DialogTrigger>
+              <Button size="sm" variant="outline"> + Add Certification </Button>
+            </DialogTrigger>
+            <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{{
+                  editingCertificationIndex !== null
+                    ? "Edit Certification"
+                    : "Add Certification"
+                }}</DialogTitle>
+                <DialogDescription>
+                  {{
+                    editingCertificationIndex !== null
+                      ? "Update your certification details."
+                      : "Add your certification details."
+                  }}
+                </DialogDescription>
+              </DialogHeader>
+              <form @submit="onCertificationSubmit" class="dialog-form">
+                <div class="form-group">
+                  <label
+                    >Certification Name <span class="required">*</span></label
+                  >
+                  <input
+                    v-model="certificationForm.name"
+                    type="text"
+                    required
+                    placeholder="AWS Certified Solutions Architect"
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Issuing Organization</label>
+                    <input
+                      v-model="certificationForm.issuingOrganization"
+                      type="text"
+                      placeholder="Amazon Web Services"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Issue Date</label>
+                    <input
+                      v-model="certificationForm.issueDate"
+                      type="month"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Expiration Date</label>
+                    <input
+                      v-model="certificationForm.expirationDate"
+                      type="month"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Credential ID</label>
+                    <input
+                      v-model="certificationForm.credentialId"
+                      type="text"
+                      placeholder="ABC123XYZ"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Credential URL</label>
+                  <input
+                    v-model="certificationForm.credentialUrl"
+                    type="url"
+                    placeholder="https://..."
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    @click="certificationDialogOpen = false"
+                    variant="outline"
+                    type="button"
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" :disabled="isSavingCertification">
+                    {{
+                      isSavingCertification
+                        ? "Saving..."
+                        : editingCertificationIndex !== null
+                        ? "Update Certification"
+                        : "Add Certification"
+                    }}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
+        <!-- Certifications List -->
         <div
-          v-for="(cert, index) in formData.certifications"
-          :key="index"
-          class="repeatable-item"
+          v-if="formData.certifications.length > 0"
+          class="certifications-list"
         >
-          <div class="item-header">
-            <span class="item-number">{{ index + 1 }}</span>
-            <Button
-              @click="removeCertification(index)"
-              size="sm"
-              variant="ghost"
-              class="remove-btn"
-            >
-              ✕
-            </Button>
-          </div>
-
-          <div class="form-group">
-            <label>Certification Name</label>
-            <input
-              v-model="cert.name"
-              type="text"
-              placeholder="AWS Certified Solutions Architect"
+          <div
+            v-for="(cert, index) in formData.certifications"
+            :key="index"
+            class="certification-item"
+          >
+            <div class="certification-header">
+              <h3 class="certification-title">{{ cert.name }}</h3>
+              <div class="action-buttons">
+                <Button
+                  @click="editCertification(index)"
+                  size="sm"
+                  variant="ghost"
+                  class="edit-btn"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"
+                    />
+                    <path d="m15 5 4 4" />
+                  </svg>
+                </Button>
+                <Button
+                  @click="removeCertification(index)"
+                  size="sm"
+                  variant="ghost"
+                  class="delete-btn"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                  </svg>
+                </Button>
+              </div>
+            </div>
+            <p class="certification-organization">
+              {{ cert.issuingOrganization }}
+            </p>
+            <p class="certification-meta">
+              <span v-if="cert.issueDate"
+                >Issued: {{ formatMonthYear(cert.issueDate) }}</span
+              >
+              <span v-if="cert.expirationDate">
+                • Expires: {{ formatMonthYear(cert.expirationDate) }}</span
+              >
+              <span v-if="!cert.expirationDate && cert.issueDate">
+                • No Expiration</span
+              >
+            </p>
+            <p v-if="cert.credentialId" class="certification-credential">
+              Credential ID: {{ cert.credentialId }}
+            </p>
+            <p v-if="cert.credentialUrl" class="certification-url">
+              <a
+                :href="cert.credentialUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View Credential
+              </a>
+            </p>
+            <hr
+              v-if="index < formData.certifications.length - 1"
+              class="certification-divider"
             />
           </div>
+        </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Issuing Organization</label>
-              <input
-                v-model="cert.issuingOrganization"
-                type="text"
-                placeholder="Amazon Web Services"
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Issue Date</label>
-              <input v-model="cert.issueDate" type="month" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Expiration Date</label>
-              <input v-model="cert.expirationDate" type="month" />
-            </div>
-
-            <div class="form-group">
-              <label>Credential ID</label>
-              <input
-                v-model="cert.credentialId"
-                type="text"
-                placeholder="ABC123XYZ"
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Credential URL</label>
-            <input
-              v-model="cert.credentialUrl"
-              type="url"
-              placeholder="https://..."
-            />
-          </div>
+        <div v-else class="empty-state">
+          <p>
+            No certifications added yet. Click "Add Certification" to get
+            started.
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -355,57 +530,173 @@
       <CardContent class="pt-6">
         <div class="section-header">
           <h3 class="form-section-title">Publications</h3>
-          <Button @click="addPublication" size="sm" variant="outline">
-            + Add Publication
-          </Button>
+          <Dialog
+            :open="publicationDialogOpen"
+            @update:open="onPublicationDialogChange"
+          >
+            <DialogTrigger>
+              <Button size="sm" variant="outline"> + Add Publication </Button>
+            </DialogTrigger>
+            <DialogContent class="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{{
+                  editingPublicationIndex !== null
+                    ? "Edit Publication"
+                    : "Add Publication"
+                }}</DialogTitle>
+                <DialogDescription>
+                  {{
+                    editingPublicationIndex !== null
+                      ? "Update your publication details."
+                      : "Add your publication details."
+                  }}
+                </DialogDescription>
+              </DialogHeader>
+              <form @submit="onPublicationSubmit" class="dialog-form">
+                <div class="form-group">
+                  <label>Title <span class="required">*</span></label>
+                  <input
+                    v-model="publicationForm.title"
+                    type="text"
+                    required
+                    placeholder="Research Paper Title"
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Publisher</label>
+                    <input
+                      v-model="publicationForm.publisher"
+                      type="text"
+                      placeholder="IEEE, ACM, etc."
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Publication Date</label>
+                    <input
+                      v-model="publicationForm.publicationDate"
+                      type="month"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>URL</label>
+                  <input
+                    v-model="publicationForm.url"
+                    type="url"
+                    placeholder="https://..."
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  />
+                </div>
+
+                <DialogFooter>
+                  <Button
+                    @click="publicationDialogOpen = false"
+                    variant="outline"
+                    type="button"
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" :disabled="isSavingPublication">
+                    {{
+                      isSavingPublication
+                        ? "Saving..."
+                        : editingPublicationIndex !== null
+                        ? "Update Publication"
+                        : "Add Publication"
+                    }}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        <div
-          v-for="(pub, index) in formData.publications"
-          :key="index"
-          class="repeatable-item"
-        >
-          <div class="item-header">
-            <span class="item-number">{{ index + 1 }}</span>
-            <Button
-              @click="removePublication(index)"
-              size="sm"
-              variant="ghost"
-              class="remove-btn"
-            >
-              ✕
-            </Button>
-          </div>
-
-          <div class="form-group">
-            <label>Title</label>
-            <input
-              v-model="pub.title"
-              type="text"
-              placeholder="Research Paper Title"
+        <!-- Publications List -->
+        <div v-if="formData.publications.length > 0" class="publications-list">
+          <div
+            v-for="(pub, index) in formData.publications"
+            :key="index"
+            class="publication-item"
+          >
+            <div class="publication-header">
+              <h3 class="publication-title">{{ pub.title }}</h3>
+              <div class="action-buttons">
+                <Button
+                  @click="editPublication(index)"
+                  size="sm"
+                  variant="ghost"
+                  class="edit-btn"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"
+                    />
+                    <path d="m15 5 4 4" />
+                  </svg>
+                </Button>
+                <Button
+                  @click="removePublication(index)"
+                  size="sm"
+                  variant="ghost"
+                  class="delete-btn"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                  </svg>
+                </Button>
+              </div>
+            </div>
+            <p v-if="pub.publisher" class="publication-publisher">
+              {{ pub.publisher }}
+            </p>
+            <p v-if="pub.publicationDate" class="publication-meta">
+              Published: {{ formatMonthYear(pub.publicationDate) }}
+            </p>
+            <p v-if="pub.url" class="publication-url">
+              <a :href="pub.url" target="_blank" rel="noopener noreferrer">
+                View Publication
+              </a>
+            </p>
+            <hr
+              v-if="index < formData.publications.length - 1"
+              class="publication-divider"
             />
           </div>
+        </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Publisher</label>
-              <input
-                v-model="pub.publisher"
-                type="text"
-                placeholder="IEEE, ACM, etc."
-              />
-            </div>
-
-            <div class="form-group">
-              <label>Publication Date</label>
-              <input v-model="pub.publicationDate" type="month" />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>URL</label>
-            <input v-model="pub.url" type="url" placeholder="https://..." />
-          </div>
+        <div v-else class="empty-state">
+          <p>
+            No publications added yet. Click "Add Publication" to get started.
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -527,6 +818,27 @@ function removeEducation(index) {
 }
 
 // Skills
+const skillDialogOpen = ref(false);
+const skillForm = ref({
+  name: "",
+});
+
+function resetSkillForm() {
+  skillForm.value = {
+    name: "",
+  };
+}
+
+async function onSkillSubmit(event) {
+  event.preventDefault();
+
+  if (skillForm.value.name.trim()) {
+    formData.skills.push({ name: skillForm.value.name.trim() });
+    resetSkillForm();
+    skillDialogOpen.value = false;
+  }
+}
+
 function addSkill() {
   formData.skills.push({
     name: "",
@@ -539,15 +851,74 @@ function removeSkill(index) {
 }
 
 // Certifications
-function addCertification() {
-  formData.certifications.push({
+const certificationDialogOpen = ref(false);
+const isSavingCertification = ref(false);
+const editingCertificationIndex = ref(null);
+
+const certificationForm = ref({
+  name: "",
+  issuingOrganization: "",
+  issueDate: "",
+  expirationDate: "",
+  credentialId: "",
+  credentialUrl: "",
+});
+
+function resetCertificationForm() {
+  certificationForm.value = {
     name: "",
     issuingOrganization: "",
     issueDate: "",
     expirationDate: "",
     credentialId: "",
     credentialUrl: "",
-  });
+  };
+  editingCertificationIndex.value = null;
+}
+
+async function onCertificationSubmit(event) {
+  event.preventDefault();
+  isSavingCertification.value = true;
+
+  try {
+    if (editingCertificationIndex.value !== null) {
+      // Update existing certification
+      formData.certifications[editingCertificationIndex.value] = {
+        ...certificationForm.value,
+      };
+    } else {
+      // Add new certification
+      formData.certifications.push({ ...certificationForm.value });
+    }
+
+    // Reset form and close dialog
+    resetCertificationForm();
+    certificationDialogOpen.value = false;
+  } catch (error) {
+    console.error("Error saving certification:", error);
+    alert("Failed to save certification. Please try again.");
+  } finally {
+    isSavingCertification.value = false;
+  }
+}
+
+function editCertification(index) {
+  const cert = formData.certifications[index];
+  certificationForm.value = { ...cert };
+  editingCertificationIndex.value = index;
+  certificationDialogOpen.value = true;
+}
+
+function onCertificationDialogChange(isOpen) {
+  certificationDialogOpen.value = isOpen;
+  // Reset form when opening dialog for adding (not editing)
+  if (isOpen && editingCertificationIndex.value === null) {
+    resetCertificationForm();
+  }
+  // Reset editing state when closing dialog
+  if (!isOpen) {
+    editingCertificationIndex.value = null;
+  }
 }
 
 function removeCertification(index) {
@@ -555,13 +926,70 @@ function removeCertification(index) {
 }
 
 // Publications
-function addPublication() {
-  formData.publications.push({
+const publicationDialogOpen = ref(false);
+const isSavingPublication = ref(false);
+const editingPublicationIndex = ref(null);
+
+const publicationForm = ref({
+  title: "",
+  publisher: "",
+  publicationDate: "",
+  url: "",
+});
+
+function resetPublicationForm() {
+  publicationForm.value = {
     title: "",
     publisher: "",
     publicationDate: "",
     url: "",
-  });
+  };
+  editingPublicationIndex.value = null;
+}
+
+async function onPublicationSubmit(event) {
+  event.preventDefault();
+  isSavingPublication.value = true;
+
+  try {
+    if (editingPublicationIndex.value !== null) {
+      // Update existing publication
+      formData.publications[editingPublicationIndex.value] = {
+        ...publicationForm.value,
+      };
+    } else {
+      // Add new publication
+      formData.publications.push({ ...publicationForm.value });
+    }
+
+    // Reset form and close dialog
+    resetPublicationForm();
+    publicationDialogOpen.value = false;
+  } catch (error) {
+    console.error("Error saving publication:", error);
+    alert("Failed to save publication. Please try again.");
+  } finally {
+    isSavingPublication.value = false;
+  }
+}
+
+function editPublication(index) {
+  const pub = formData.publications[index];
+  publicationForm.value = { ...pub };
+  editingPublicationIndex.value = index;
+  publicationDialogOpen.value = true;
+}
+
+function onPublicationDialogChange(isOpen) {
+  publicationDialogOpen.value = isOpen;
+  // Reset form when opening dialog for adding (not editing)
+  if (isOpen && editingPublicationIndex.value === null) {
+    resetPublicationForm();
+  }
+  // Reset editing state when closing dialog
+  if (!isOpen) {
+    editingPublicationIndex.value = null;
+  }
 }
 
 function removePublication(index) {
@@ -650,6 +1078,14 @@ function fillDummyData() {
       url: "https://medium.com/engineering/react-architecture",
     },
   ];
+}
+
+// Helper function to format month-year dates
+function formatMonthYear(dateString) {
+  if (!dateString) return "";
+  const [year, month] = dateString.split("-");
+  const date = new Date(year, month - 1);
+  return date.toLocaleDateString("en-US", { year: "numeric", month: "short" });
 }
 </script>
 
@@ -780,22 +1216,14 @@ function fillDummyData() {
 
 /* Education List */
 .education-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
   margin-top: 20px;
 }
 
-.education-card {
-  border: 1px solid #e5e7eb;
-  transition: border-color 0.2s ease;
+.education-item {
+  padding: 16px 0;
 }
 
-.education-card:hover {
-  border-color: #d1d5db;
-}
-
-.card-header {
+.education-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -827,6 +1255,19 @@ function fillDummyData() {
   color: #4b5563;
   line-height: 1.6;
   margin: 8px 0 0 0;
+}
+
+.education-divider {
+  margin: 20px 0 0 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .action-buttons {
@@ -863,6 +1304,51 @@ function fillDummyData() {
   font-size: 14px;
 }
 
+/* Skills */
+.skills-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.skill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #eff6ff;
+  color: #1e40af;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid #dbeafe;
+  transition: all 0.2s;
+}
+
+.skill-badge:hover {
+  background-color: #dbeafe;
+  border-color: #bfdbfe;
+}
+
+.skill-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #3b82f6;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.skill-remove:hover {
+  background-color: #3b82f6;
+  color: white;
+}
+
 /* Dialog Form */
 .dialog-form {
   display: flex;
@@ -881,5 +1367,129 @@ function fillDummyData() {
   .form-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Certifications */
+.certifications-list {
+  margin-top: 20px;
+}
+
+.certification-item {
+  padding: 16px 0;
+}
+
+.certification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.certification-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.certification-organization {
+  font-size: 15px;
+  font-weight: 500;
+  color: #3b82f6;
+  margin: 0 0 4px 0;
+}
+
+.certification-meta {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 4px 0;
+}
+
+.certification-credential {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0;
+}
+
+.certification-url {
+  font-size: 13px;
+  margin: 8px 0 0 0;
+}
+
+.certification-url a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.certification-url a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.certification-divider {
+  margin: 20px 0 0 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Publications */
+.publications-list {
+  margin-top: 20px;
+}
+
+.publication-item {
+  padding: 16px 0;
+}
+
+.publication-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.publication-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.publication-publisher {
+  font-size: 15px;
+  font-weight: 500;
+  color: #3b82f6;
+  margin: 0 0 4px 0;
+}
+
+.publication-meta {
+  font-size: 13px;
+  color: #64748b;
+  margin: 4px 0;
+}
+
+.publication-url {
+  font-size: 13px;
+  margin: 8px 0 0 0;
+}
+
+.publication-url a {
+  color: #3b82f6;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.publication-url a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.publication-divider {
+  margin: 20px 0 0 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
 }
 </style>
