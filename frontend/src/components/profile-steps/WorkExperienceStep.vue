@@ -14,12 +14,48 @@
     </div>
 
     <div class="section-header">
+      <div class="section-title-with-icon">
+        <svg
+          class="section-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+        <h3 class="form-section-title">Work History</h3>
+      </div>
       <Dialog
         :open="experienceDialogOpen"
         @update:open="experienceDialogOpen = $event"
       >
         <DialogTrigger>
-          <Button variant="outline"> + Add Experience </Button>
+          <Button variant="outline" class="add-item-btn">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="btn-icon"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v8" />
+              <path d="M8 12h8" />
+            </svg>
+            Add Experience
+          </Button>
         </DialogTrigger>
         <DialogContent class="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -539,7 +575,8 @@ function fillDummyData() {
 
 .section-header {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20px;
 }
 
@@ -762,6 +799,60 @@ function fillDummyData() {
   text-align: center;
   padding: 60px 20px;
   color: #64748b;
+  font-size: 14px;
+}
+
+.section-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-icon {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.form-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.add-item-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  background: white;
+  color: #0f172a;
+  transition: all 0.2s ease;
+}
+
+.add-item-btn:hover {
+  border-color: #0f172a;
+  background: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-item-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.add-item-btn:hover .btn-icon {
+  transform: rotate(90deg);
 }
 
 @media (max-width: 768px) {

@@ -7,9 +7,11 @@ const props = defineProps({
   class: { type: null, required: false },
 });
 
-const { error, formMessageId } = useFormField();
+const { error, isTouched, formMessageId } = useFormField();
 
-const body = computed(() => error.value?.message || "");
+const body = computed(() =>
+  isTouched && error.value?.message ? error.value.message : ""
+);
 </script>
 
 <template>
