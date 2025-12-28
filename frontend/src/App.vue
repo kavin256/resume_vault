@@ -73,6 +73,7 @@ body {
   min-height: 100vh;
   background: #f8f9fb;
   overflow-x: hidden;
+  position: relative;
 }
 
 .main-content.no-nav {
