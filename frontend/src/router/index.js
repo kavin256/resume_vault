@@ -80,9 +80,7 @@ router.beforeEach(async (to, from, next) => {
   // If route requires auth and user is not signed in, redirect to sign-in
   if (to.meta.requiresAuth && !isSignedIn.value) {
     next({ name: "sign-in" });
-  }
-  // Otherwise, allow navigation
-  else {
+  } else {
     next();
   }
 });

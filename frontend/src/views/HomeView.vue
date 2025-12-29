@@ -118,10 +118,14 @@ import {
 } from "@/components/ui/sheet";
 import DataTable from "@/components/DataTable.vue";
 import { ArrowUpDown } from "lucide-vue-next";
+import { useUserSync } from "@/composables/useUserSync";
 
 const drawerOpen = ref(false);
 const selectedApp = ref(null);
 const windowWidth = ref(window.innerWidth);
+
+// User sync
+const { performUserSync } = useUserSync();
 
 // Update window width on resize
 const updateWidth = () => {
@@ -130,6 +134,9 @@ const updateWidth = () => {
 
 onMounted(() => {
   window.addEventListener("resize", updateWidth);
+
+  // Sync user with backend on component mount
+  performUserSync();
 });
 
 onUnmounted(() => {
