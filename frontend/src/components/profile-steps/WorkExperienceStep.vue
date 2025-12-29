@@ -59,9 +59,9 @@
         </DialogTrigger>
         <DialogContent class="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Work Experience</DialogTitle>
+            <DialogTitle>{{ editingIndex !== null ? 'Edit Work Experience' : 'Add Work Experience' }}</DialogTitle>
             <DialogDescription>
-              Add your professional work experience details.
+              {{ editingIndex !== null ? 'Update your professional work experience details.' : 'Add your professional work experience details.' }}
             </DialogDescription>
           </DialogHeader>
           <form @submit="onExperienceSubmit" class="dialog-form">
@@ -187,11 +187,12 @@
                 @click="experienceDialogOpen = false"
                 variant="outline"
                 type="button"
+                :disabled="isSaving"
               >
                 Cancel
               </Button>
               <Button type="submit" :disabled="isSaving">
-                {{ isSaving ? "Saving..." : "Save Experience" }}
+                {{ isSaving ? 'Saving...' : (editingIndex !== null ? 'Update Experience' : 'Save Experience') }}
               </Button>
             </DialogFooter>
           </form>
@@ -217,28 +218,51 @@
                 {{ exp.currentlyWorking ? "Present" : formatDate(exp.endDate) }}
               </p>
             </div>
-            <Button
-              @click="removeExperience(index)"
-              size="sm"
-              variant="ghost"
-              class="delete-btn"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+            <div class="card-actions">
+              <Button
+                @click="editExperience(index)"
+                size="sm"
+                variant="ghost"
+                class="edit-btn"
               >
-                <path d="M3 6h18" />
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-              </svg>
-            </Button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  <path d="m15 5 4 4" />
+                </svg>
+              </Button>
+              <Button
+                @click="removeExperience(index)"
+                size="sm"
+                variant="ghost"
+                class="delete-btn"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+              </Button>
+            </div>
           </div>
 
           <!-- Responsibilities -->
@@ -296,7 +320,9 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref } from "vue";
+import { defineProps, defineEmits, ref, watch } from "vue";
+import { useAuth } from "@clerk/vue";
+import { updateMasterProfile } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -318,9 +344,11 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
+const auth = useAuth();
 const formData = props.modelValue;
 const experienceDialogOpen = ref(false);
 const isSaving = ref(false);
+const editingIndex = ref(null); // null means adding new, number means editing
 
 const experienceForm = ref({
   jobTitle: "",
@@ -333,6 +361,14 @@ const experienceForm = ref({
   responsibilitiesText: "",
   achievementsText: "",
   technologiesText: "",
+});
+
+// Reset form when dialog closes
+watch(experienceDialogOpen, (isOpen) => {
+  if (!isOpen) {
+    resetExperienceForm();
+    editingIndex.value = null;
+  }
 });
 
 function resetExperienceForm() {
@@ -384,41 +420,92 @@ async function onExperienceSubmit(event) {
       : [];
 
     const experienceData = {
-      ...experienceForm.value,
+      jobTitle: experienceForm.value.jobTitle,
+      companyName: experienceForm.value.companyName,
+      employmentType: experienceForm.value.employmentType,
+      location: experienceForm.value.location,
+      startDate: experienceForm.value.startDate,
+      endDate: experienceForm.value.endDate,
+      currentlyWorking: experienceForm.value.currentlyWorking,
       responsibilities,
       achievements,
       technologies,
     };
 
-    // Save to backend
-    const response = await fetch("http://localhost:8000/experience", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ experience: experienceData }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to save experience");
+    // Update local state
+    if (editingIndex.value !== null) {
+      // Update existing experience
+      formData.workExperience[editingIndex.value] = experienceData;
+      console.log('[WorkExperienceStep] Updating experience at index:', editingIndex.value);
+    } else {
+      // Add new experience
+      formData.workExperience.push(experienceData);
+      console.log('[WorkExperienceStep] Adding new experience');
     }
 
-    // Add to local state
-    formData.workExperience.push(experienceData);
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        workExperience: formData.workExperience
+      });
+      console.log('[WorkExperienceStep] Work experience saved to database');
+    }
 
     // Reset form and close dialog
     resetExperienceForm();
+    editingIndex.value = null;
     experienceDialogOpen.value = false;
   } catch (error) {
-    console.error("Error saving experience:", error);
-    alert("Failed to save experience. Please try again.");
+    console.error('[WorkExperienceStep] Error saving experience:', error);
+    alert('Failed to save experience. Please try again.');
   } finally {
     isSaving.value = false;
   }
 }
 
-function removeExperience(index) {
+async function removeExperience(index) {
+  const removedExperience = formData.workExperience[index];
+  
+  // Remove from local state
   formData.workExperience.splice(index, 1);
+
+  try {
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        workExperience: formData.workExperience
+      });
+      console.log('[WorkExperienceStep] Work experience removed and saved to database');
+    }
+  } catch (error) {
+    console.error('[WorkExperienceStep] Failed to remove experience:', error);
+    // Restore the experience if save failed
+    formData.workExperience.splice(index, 0, removedExperience);
+    alert('Failed to remove experience. Please try again.');
+  }
+}
+
+function editExperience(index) {
+  const exp = formData.workExperience[index];
+  
+  // Populate form with existing data
+  experienceForm.value = {
+    jobTitle: exp.jobTitle || "",
+    companyName: exp.companyName || "",
+    employmentType: exp.employmentType || "Full-time",
+    location: exp.location || "",
+    startDate: exp.startDate || "",
+    endDate: exp.endDate || "",
+    currentlyWorking: exp.currentlyWorking || false,
+    responsibilitiesText: exp.responsibilities?.join("\n• ") || "",
+    achievementsText: exp.achievements?.join("\n• ") || "",
+    technologiesText: exp.technologies?.join(", ") || "",
+  };
+  
+  editingIndex.value = index;
+  experienceDialogOpen.value = true;
 }
 
 function formatDate(dateString) {
@@ -591,6 +678,11 @@ function fillDummyData() {
   margin-bottom: 20px;
 }
 
+.card-actions {
+  display: flex;
+  gap: 4px;
+}
+
 .form-section-title {
   font-size: 18px;
   font-weight: 600;
@@ -600,6 +692,17 @@ function fillDummyData() {
 
 .remove-btn {
   color: #ef4444;
+}
+
+.edit-btn {
+  color: #3b82f6;
+  padding: 8px;
+  height: auto;
+}
+
+.edit-btn:hover {
+  background: #dbeafe;
+  color: #2563eb;
 }
 
 .delete-btn {
