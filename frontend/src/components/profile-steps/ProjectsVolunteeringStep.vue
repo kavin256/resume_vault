@@ -131,6 +131,7 @@
                     @click="projectDialogOpen = false"
                     variant="outline"
                     type="button"
+                    :disabled="isSavingProject"
                   >
                     Cancel
                   </Button>
@@ -363,6 +364,7 @@
                     @click="volunteeringDialogOpen = false"
                     variant="outline"
                     type="button"
+                    :disabled="isSavingVolunteering"
                   >
                     Cancel
                   </Button>
@@ -537,6 +539,8 @@
 
 <script setup>
 import { defineProps, defineEmits, ref } from "vue";
+import { useAuth } from "@clerk/vue";
+import { updateMasterProfile } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -548,6 +552,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
+const auth = useAuth();
 
 const props = defineProps({
   modelValue: {
@@ -598,23 +604,37 @@ async function onProjectSubmit(event) {
       .filter((tech) => tech.length > 0);
 
     const projectData = {
-      ...projectForm.value,
+      title: projectForm.value.title,
+      description: projectForm.value.description,
+      role: projectForm.value.role,
       technologies,
+      link: projectForm.value.link,
     };
 
     if (editingProjectIndex.value !== null) {
       // Update existing project
+      console.log("[ProjectsVolunteeringStep] Updating project");
       formData.projects[editingProjectIndex.value] = projectData;
     } else {
       // Add new project
+      console.log("[ProjectsVolunteeringStep] Adding new project");
       formData.projects.push(projectData);
+    }
+
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        projects: formData.projects,
+      });
+      console.log("[ProjectsVolunteeringStep] Project saved to database");
     }
 
     // Reset form and close dialog
     resetProjectForm();
     projectDialogOpen.value = false;
   } catch (error) {
-    console.error("Error saving project:", error);
+    console.error("[ProjectsVolunteeringStep] Error saving project:", error);
     alert("Failed to save project. Please try again.");
   } finally {
     isSavingProject.value = false;
@@ -640,8 +660,32 @@ function onProjectDialogChange(isOpen) {
   }
 }
 
-function removeProject(index) {
+async function removeProject(index) {
+  const removedProject = formData.projects[index];
+
+  // Remove from local state
   formData.projects.splice(index, 1);
+
+  try {
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        projects: formData.projects,
+      });
+      console.log(
+        "[ProjectsVolunteeringStep] Project removed and saved to database"
+      );
+    }
+  } catch (error) {
+    console.error(
+      "[ProjectsVolunteeringStep] Failed to remove project:",
+      error
+    );
+    // Restore the project if save failed
+    formData.projects.splice(index, 0, removedProject);
+    alert("Failed to remove project. Please try again.");
+  }
 }
 
 // Volunteering
@@ -673,21 +717,41 @@ async function onVolunteeringSubmit(event) {
   isSavingVolunteering.value = true;
 
   try {
+    const volunteeringData = {
+      organization: volunteeringForm.value.organization,
+      role: volunteeringForm.value.role,
+      startDate: volunteeringForm.value.startDate,
+      endDate: volunteeringForm.value.endDate,
+      description: volunteeringForm.value.description,
+    };
+
     if (editingVolunteeringIndex.value !== null) {
       // Update existing volunteering
-      formData.volunteering[editingVolunteeringIndex.value] = {
-        ...volunteeringForm.value,
-      };
+      console.log("[ProjectsVolunteeringStep] Updating volunteering");
+      formData.volunteering[editingVolunteeringIndex.value] = volunteeringData;
     } else {
       // Add new volunteering
-      formData.volunteering.push({ ...volunteeringForm.value });
+      console.log("[ProjectsVolunteeringStep] Adding new volunteering");
+      formData.volunteering.push(volunteeringData);
+    }
+
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        volunteering: formData.volunteering,
+      });
+      console.log("[ProjectsVolunteeringStep] Volunteering saved to database");
     }
 
     // Reset form and close dialog
     resetVolunteeringForm();
     volunteeringDialogOpen.value = false;
   } catch (error) {
-    console.error("Error saving volunteering:", error);
+    console.error(
+      "[ProjectsVolunteeringStep] Error saving volunteering:",
+      error
+    );
     alert("Failed to save volunteering. Please try again.");
   } finally {
     isSavingVolunteering.value = false;
@@ -713,8 +777,32 @@ function onVolunteeringDialogChange(isOpen) {
   }
 }
 
-function removeVolunteering(index) {
+async function removeVolunteering(index) {
+  const removedVolunteering = formData.volunteering[index];
+
+  // Remove from local state
   formData.volunteering.splice(index, 1);
+
+  try {
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        volunteering: formData.volunteering,
+      });
+      console.log(
+        "[ProjectsVolunteeringStep] Volunteering removed and saved to database"
+      );
+    }
+  } catch (error) {
+    console.error(
+      "[ProjectsVolunteeringStep] Failed to remove volunteering:",
+      error
+    );
+    // Restore the volunteering if save failed
+    formData.volunteering.splice(index, 0, removedVolunteering);
+    alert("Failed to remove volunteering. Please try again.");
+  }
 }
 
 // Helper function to format month-year dates

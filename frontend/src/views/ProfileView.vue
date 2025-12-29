@@ -311,8 +311,63 @@ function goToStep(index) {
 }
 
 async function finishProfile() {
-  await saveProfile();
-  router.push("/home");
+  saving.value = true;
+
+  try {
+    // Check if job preferences have any data
+    const hasJobPreferences =
+      profileData.jobPreferences.desiredRolesText?.trim() ||
+      profileData.jobPreferences.employmentTypesText?.trim() ||
+      profileData.jobPreferences.locationsText?.trim() ||
+      profileData.jobPreferences.openToRelocation;
+
+    if (hasJobPreferences) {
+      console.log("[ProfileView] Saving job preferences");
+
+      // Parse comma-separated text fields to arrays
+      const desiredRoles =
+        profileData.jobPreferences.desiredRolesText
+          ?.split(",")
+          .map((role) => role.trim())
+          .filter((role) => role.length > 0) || [];
+
+      const employmentTypes =
+        profileData.jobPreferences.employmentTypesText
+          ?.split(",")
+          .map((type) => type.trim())
+          .filter((type) => type.length > 0) || [];
+
+      const locations =
+        profileData.jobPreferences.locationsText
+          ?.split(",")
+          .map((loc) => loc.trim())
+          .filter((loc) => loc.length > 0) || [];
+
+      const token = await auth.getToken.value();
+      if (token) {
+        await updateMasterProfile(token, {
+          jobPreferences: {
+            desiredRoles,
+            employmentTypes,
+            locations,
+            openToRelocation:
+              profileData.jobPreferences.openToRelocation || false,
+          },
+        });
+        console.log("[ProfileView] Job preferences saved successfully");
+      }
+    } else {
+      console.log("[ProfileView] No job preferences to save");
+    }
+
+    // Navigate to Home vault screen
+    router.push("/home");
+  } catch (error) {
+    console.error("[ProfileView] Error saving job preferences:", error);
+    alert("Failed to save job preferences. Please try again.");
+  } finally {
+    saving.value = false;
+  }
 }
 </script>
 

@@ -59,9 +59,17 @@
         </DialogTrigger>
         <DialogContent class="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{{ editingIndex !== null ? 'Edit Work Experience' : 'Add Work Experience' }}</DialogTitle>
+            <DialogTitle>{{
+              editingIndex !== null
+                ? "Edit Work Experience"
+                : "Add Work Experience"
+            }}</DialogTitle>
             <DialogDescription>
-              {{ editingIndex !== null ? 'Update your professional work experience details.' : 'Add your professional work experience details.' }}
+              {{
+                editingIndex !== null
+                  ? "Update your professional work experience details."
+                  : "Add your professional work experience details."
+              }}
             </DialogDescription>
           </DialogHeader>
           <form @submit="onExperienceSubmit" class="dialog-form">
@@ -192,7 +200,13 @@
                 Cancel
               </Button>
               <Button type="submit" :disabled="isSaving">
-                {{ isSaving ? 'Saving...' : (editingIndex !== null ? 'Update Experience' : 'Save Experience') }}
+                {{
+                  isSaving
+                    ? "Saving..."
+                    : editingIndex !== null
+                    ? "Update Experience"
+                    : "Save Experience"
+                }}
               </Button>
             </DialogFooter>
           </form>
@@ -436,20 +450,23 @@ async function onExperienceSubmit(event) {
     if (editingIndex.value !== null) {
       // Update existing experience
       formData.workExperience[editingIndex.value] = experienceData;
-      console.log('[WorkExperienceStep] Updating experience at index:', editingIndex.value);
+      console.log(
+        "[WorkExperienceStep] Updating experience at index:",
+        editingIndex.value
+      );
     } else {
       // Add new experience
       formData.workExperience.push(experienceData);
-      console.log('[WorkExperienceStep] Adding new experience');
+      console.log("[WorkExperienceStep] Adding new experience");
     }
 
     // Save to database immediately
     const token = await auth.getToken.value();
     if (token) {
       await updateMasterProfile(token, {
-        workExperience: formData.workExperience
+        workExperience: formData.workExperience,
       });
-      console.log('[WorkExperienceStep] Work experience saved to database');
+      console.log("[WorkExperienceStep] Work experience saved to database");
     }
 
     // Reset form and close dialog
@@ -457,8 +474,8 @@ async function onExperienceSubmit(event) {
     editingIndex.value = null;
     experienceDialogOpen.value = false;
   } catch (error) {
-    console.error('[WorkExperienceStep] Error saving experience:', error);
-    alert('Failed to save experience. Please try again.');
+    console.error("[WorkExperienceStep] Error saving experience:", error);
+    alert("Failed to save experience. Please try again.");
   } finally {
     isSaving.value = false;
   }
@@ -466,7 +483,7 @@ async function onExperienceSubmit(event) {
 
 async function removeExperience(index) {
   const removedExperience = formData.workExperience[index];
-  
+
   // Remove from local state
   formData.workExperience.splice(index, 1);
 
@@ -475,21 +492,23 @@ async function removeExperience(index) {
     const token = await auth.getToken.value();
     if (token) {
       await updateMasterProfile(token, {
-        workExperience: formData.workExperience
+        workExperience: formData.workExperience,
       });
-      console.log('[WorkExperienceStep] Work experience removed and saved to database');
+      console.log(
+        "[WorkExperienceStep] Work experience removed and saved to database"
+      );
     }
   } catch (error) {
-    console.error('[WorkExperienceStep] Failed to remove experience:', error);
+    console.error("[WorkExperienceStep] Failed to remove experience:", error);
     // Restore the experience if save failed
     formData.workExperience.splice(index, 0, removedExperience);
-    alert('Failed to remove experience. Please try again.');
+    alert("Failed to remove experience. Please try again.");
   }
 }
 
 function editExperience(index) {
   const exp = formData.workExperience[index];
-  
+
   // Populate form with existing data
   experienceForm.value = {
     jobTitle: exp.jobTitle || "",
@@ -503,7 +522,7 @@ function editExperience(index) {
     achievementsText: exp.achievements?.join("\n• ") || "",
     technologiesText: exp.technologies?.join(", ") || "",
   };
-  
+
   editingIndex.value = index;
   experienceDialogOpen.value = true;
 }
