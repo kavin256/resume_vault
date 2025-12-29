@@ -2,187 +2,229 @@
   <div class="profile-view">
     <div class="page-header">
       <h1>Master Profile</h1>
-      <p class="page-description">Enter your career information once. This data will be used to generate tailored resumes.</p>
+      <p class="page-description">
+        Build your comprehensive professional profile step by step
+      </p>
     </div>
 
-    <div class="card">
-      <h2 class="section-title">Personal Information</h2>
+    <!-- Breadcrumb Navigation -->
+    <Breadcrumb class="breadcrumb-wrapper">
+      <BreadcrumbList>
+        <BreadcrumbItem v-for="(step, index) in steps" :key="index">
+          <BreadcrumbLink
+            v-if="index < currentStep"
+            @click="goToStep(index)"
+            :class="'cursor-pointer font-medium'"
+          >
+            <span class="step-number completed">{{ index + 1 }}</span>
+            {{ step.label }}
+          </BreadcrumbLink>
+          <BreadcrumbPage
+            v-else-if="index === currentStep"
+            class="flex items-center gap-2"
+          >
+            <span class="step-number active">{{ index + 1 }}</span>
+            {{ step.label }}
+          </BreadcrumbPage>
+          <span v-else class="flex items-center gap-2 text-muted-foreground">
+            <span class="step-number">{{ index + 1 }}</span>
+            {{ step.label }}
+          </span>
+          <BreadcrumbSeparator v-if="index < steps.length - 1" />
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>Full Name <span class="required">*</span></label>
-          <input v-model="profile.name" type="text" required />
-        </div>
-
-        <div class="form-group">
-          <label>Email <span class="required">*</span></label>
-          <input v-model="profile.email" type="email" required />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Phone <span class="required">*</span></label>
-          <input v-model="profile.phone" type="tel" required />
-        </div>
-      </div>
+    <!-- Step Content -->
+    <div class="step-container">
+      <PersonalInfoStep v-if="currentStep === 0" v-model="profileData" />
+      <WorkExperienceStep v-if="currentStep === 1" v-model="profileData" />
+      <EducationSkillsStep v-if="currentStep === 2" v-model="profileData" />
+      <ProjectsVolunteeringStep
+        v-if="currentStep === 3"
+        v-model="profileData"
+      />
     </div>
 
-    <div class="card">
-      <h2 class="section-title">Professional Summary</h2>
-
-      <div class="form-group">
-        <label>Summary <span class="required">*</span></label>
-        <textarea v-model="profile.summary" rows="3" required placeholder="e.g., Results-driven software engineer with 5+ years of experience building scalable web applications..."></textarea>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2 class="section-title">Professional Experience</h2>
-
-      <div class="form-group">
-        <label>Work Experience <span class="required">*</span></label>
-        <textarea v-model="profile.professionalExperience" rows="10" required placeholder="List your professional experience in detail. Include company names, job titles, dates, and key accomplishments.
-
-Example:
-Senior Software Engineer | Tech Company Inc. | 2020 - Present
-• Led development of customer-facing web application serving 100k+ users
-• Improved application performance by 40% through optimization initiatives
-• Mentored team of 3 junior developers
-
-Software Engineer | StartupCo | 2018 - 2020
-• Built REST APIs using Python and FastAPI
-• Implemented CI/CD pipeline reducing deployment time by 60%"></textarea>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2 class="section-title">Skills & Education</h2>
-
-      <div class="form-group">
-        <label>Technical Skills <span class="required">*</span></label>
-        <textarea v-model="profile.skills" rows="3" required placeholder="e.g., JavaScript, TypeScript, Python, React, Vue.js, Node.js, FastAPI, PostgreSQL, MongoDB, AWS, Docker, Git"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Education <span class="required">*</span></label>
-        <input v-model="profile.education" type="text" required placeholder="e.g., BS Computer Science, Stanford University, 2018" />
-      </div>
-
-      <div class="form-group">
-        <label>Licenses & Certifications</label>
-        <textarea v-model="profile.licenses" rows="2" placeholder="e.g., AWS Certified Solutions Architect, PMP Certification, Certified Kubernetes Administrator"></textarea>
-      </div>
-    </div>
-
+    <!-- Navigation Footer -->
     <div class="action-footer">
-      <!-- TODO: Remove this test button before production -->
-      <Button @click="toggleTestData" variant="outline">
-        {{ hasData ? 'Clear Data' : 'Fill with Test Data' }}
+      <Button v-if="currentStep > 0" @click="previousStep" variant="outline">
+        ← Previous
       </Button>
+      <div class="spacer"></div>
       <Button
-        @click="continueToGenerate"
-        :disabled="!isFormValid"
+        v-if="currentStep < steps.length - 1"
+        @click="nextStep"
+        :disabled="saving"
       >
-        Continue to Generate Resume →
+        {{ saving ? "Saving..." : "Save & Continue →" }}
+      </Button>
+      <Button v-else @click="finishProfile" :disabled="saving">
+        {{ saving ? "Saving..." : "Save & Finish" }}
       </Button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { inject, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { Button } from '@/components/ui/button'
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { Button } from "@/components/ui/button";
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import PersonalInfoStep from "@/components/profile-steps/PersonalInfoStep.vue";
+import WorkExperienceStep from "@/components/profile-steps/WorkExperienceStep.vue";
+import EducationSkillsStep from "@/components/profile-steps/EducationSkillsStep.vue";
+import ProjectsVolunteeringStep from "@/components/profile-steps/ProjectsVolunteeringStep.vue";
 
-const profile = inject('masterProfile')
-const router = useRouter()
+const router = useRouter();
+const currentStep = ref(0);
+const saving = ref(false);
 
-// Validate all required fields are filled
-const isFormValid = computed(() => {
-  return profile.value.name?.trim() &&
-         profile.value.email?.trim() &&
-         profile.value.phone?.trim() &&
-         profile.value.summary?.trim() &&
-         profile.value.professionalExperience?.trim() &&
-         profile.value.skills?.trim() &&
-         profile.value.education?.trim()
-})
+const steps = [
+  { label: "Personal Info & Summary", key: "personalInfo" },
+  { label: "Work Experience", key: "workExperience" },
+  { label: "Education & Skills", key: "educationSkills" },
+  { label: "Projects & Volunteering", key: "projectsVolunteering" },
+];
 
-// TODO: Remove this computed and function before production
-const hasData = computed(() => {
-  return profile.value.name || profile.value.email || profile.value.phone ||
-         profile.value.summary || profile.value.professionalExperience ||
-         profile.value.skills || profile.value.education || profile.value.licenses
-})
+const profileData = reactive({
+  personalInfo: {
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    location: {
+      city: "",
+      country: "",
+    },
+    linkedinUrl: "",
+    portfolioUrl: "",
+  },
+  professionalHeadline: "",
+  summary: "",
+  workExperience: [],
+  education: [],
+  skills: [],
+  certifications: [],
+  projects: [],
+  volunteering: [],
+  languages: [],
+  publications: [],
+  jobPreferences: {
+    desiredRoles: [],
+    desiredRolesText: "",
+    employmentTypes: [],
+    employmentTypesText: "",
+    locations: [],
+    locationsText: "",
+    openToRelocation: false,
+  },
+});
 
-function continueToGenerate() {
-  if (isFormValid.value) {
-    router.push('/generate')
+onMounted(async () => {
+  await loadProfile();
+});
+
+async function loadProfile() {
+  try {
+    const response = await fetch("http://localhost:8000/profile");
+    if (response.ok) {
+      const data = await response.json();
+      if (data.profile) {
+        Object.assign(profileData, data.profile);
+
+        // Restore text fields for arrays
+        if (profileData.jobPreferences) {
+          profileData.jobPreferences.desiredRolesText =
+            profileData.jobPreferences.desiredRoles?.join(", ") || "";
+          profileData.jobPreferences.employmentTypesText =
+            profileData.jobPreferences.employmentTypes?.join(", ") || "";
+          profileData.jobPreferences.locationsText =
+            profileData.jobPreferences.locations?.join(", ") || "";
+        }
+
+        // Restore text fields for work experience
+        profileData.workExperience.forEach((exp) => {
+          exp.responsibilitiesText = exp.responsibilities?.join("\n• ") || "";
+          exp.achievementsText = exp.achievements?.join("\n• ") || "";
+          exp.technologiesText = exp.technologies?.join(", ") || "";
+        });
+
+        // Restore text fields for projects
+        profileData.projects.forEach((project) => {
+          project.technologiesText = project.technologies?.join(", ") || "";
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Failed to load profile:", error);
   }
 }
 
-// TODO: Remove this test function before production
-function toggleTestData() {
-  if (hasData.value) {
-    // Clear data
-    profile.value.name = ''
-    profile.value.email = ''
-    profile.value.phone = ''
-    profile.value.summary = ''
-    profile.value.professionalExperience = ''
-    profile.value.skills = ''
-    profile.value.education = ''
-    profile.value.licenses = ''
-  } else {
-    // Fill with test data
-    profile.value.name = 'Sarah Chen'
-    profile.value.email = 'sarah.chen@email.com'
-    profile.value.phone = '+1 (555) 123-4567'
-    profile.value.summary = 'Results-driven Full-Stack Software Engineer with 5+ years of experience building scalable web applications and backend systems. Proven track record of leading development teams, optimizing performance, and delivering high-quality solutions that serve 100k+ users. Strong expertise in modern JavaScript frameworks, Python, and cloud technologies.'
-    profile.value.professionalExperience = `Senior Full-Stack Software Engineer | TechCorp Inc. | 2021 - Present
-• Led development of customer-facing SaaS platform serving 150k+ active users
-• Architected and implemented microservices backend using FastAPI and PostgreSQL
-• Improved application performance by 45% through code optimization and caching strategies
-• Mentored team of 4 junior developers and conducted regular code reviews
-• Implemented CI/CD pipeline using GitHub Actions, reducing deployment time by 70%
+async function saveProfile() {
+  saving.value = true;
+  try {
+    const response = await fetch("http://localhost:8000/profile", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ profile: profileData }),
+    });
 
-Full-Stack Software Engineer | InnovateLab | 2019 - 2021
-• Built responsive web applications using React and Vue.js
-• Developed RESTful APIs and GraphQL endpoints for mobile and web clients
-• Integrated third-party services including Stripe, Twilio, and SendGrid
-• Collaborated with product team to define features and technical requirements
-• Reduced bug count by 60% through comprehensive unit and integration testing
+    if (!response.ok) {
+      throw new Error("Failed to save profile");
+    }
 
-Junior Software Developer | StartupCo | 2018 - 2019
-• Contributed to full-stack development using Node.js and MongoDB
-• Implemented user authentication and authorization features
-• Participated in agile development process with 2-week sprints`
-    profile.value.skills = 'JavaScript, TypeScript, Python, React, Vue.js, Node.js, Express, FastAPI, Django, PostgreSQL, MongoDB, Redis, AWS (EC2, S3, Lambda, RDS), Docker, Kubernetes, Git, GitHub Actions, CI/CD, REST APIs, GraphQL, WebSockets, Jest, Pytest, Agile/Scrum'
-    profile.value.education = 'BS Computer Science, Stanford University, 2018'
-    profile.value.licenses = 'AWS Certified Solutions Architect - Associate, MongoDB Certified Developer'
+    const result = await response.json();
+    console.log("Profile saved:", result);
+  } catch (error) {
+    console.error("Error saving profile:", error);
+    alert("Failed to save profile. Please try again.");
+  } finally {
+    saving.value = false;
   }
+}
+
+async function nextStep() {
+  await saveProfile();
+  if (currentStep.value < steps.length - 1) {
+    currentStep.value++;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+
+function previousStep() {
+  if (currentStep.value > 0) {
+    currentStep.value--;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+
+function goToStep(index) {
+  currentStep.value = index;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function finishProfile() {
+  await saveProfile();
+  router.push("/home");
 }
 </script>
 
 <style scoped>
 .profile-view {
   width: 100%;
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 40px 48px 64px 48px;
-}
-
-@media (max-width: 1024px) {
-  .profile-view {
-    padding: 32px 32px 64px 32px;
-  }
-}
-
-@media (max-width: 768px) {
-  .profile-view {
-    padding: 24px 20px 48px 20px;
-  }
 }
 
 .page-header {
@@ -190,114 +232,108 @@ Junior Software Developer | StartupCo | 2018 - 2019
 }
 
 .page-header h1 {
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 600;
   color: #0f172a;
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   letter-spacing: -0.02em;
 }
 
 .page-description {
-  font-size: 15px;
+  font-size: 16px;
   color: #64748b;
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
-.card {
-  width: 100%;
+/* Breadcrumb Wrapper */
+.breadcrumb-wrapper {
+  margin-bottom: 48px;
+  padding: 24px;
   background: #ffffff;
-  border-radius: 10px;
-  border: 1px solid #e5e7eb;
-  padding: 28px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.section-title {
-  font-size: 17px;
+/* Step Numbers */
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 14px;
   font-weight: 600;
-  color: #0f172a;
-  margin: 0 0 20px 0;
-  letter-spacing: -0.01em;
+  background-color: #e5e7eb;
+  color: #9ca3af;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
 }
 
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.step-number.active {
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-color: #3b82f6;
+}
+
+.step-number.completed {
+  background-color: #10b981;
+  color: #ffffff;
+  border-color: #10b981;
+}
+
+/* Step Container */
+.step-container {
+  min-height: 400px;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+/* Action Footer */
+.action-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 16px;
-  margin-bottom: 16px;
+  padding: 0;
+  margin: 32px auto 0;
+  max-width: 900px;
 }
 
-@media (max-width: 640px) {
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 0;
+.spacer {
+  flex: 1;
+}
+
+@media (max-width: 1024px) {
+  .profile-view {
+    padding: 32px 32px 64px 32px;
+  }
+
+  .breadcrumb-wrapper {
+    padding: 16px;
+  }
+
+  .step-number {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
   }
 }
 
-.form-row:last-child {
-  margin-bottom: 0;
-}
+@media (max-width: 768px) {
+  .profile-view {
+    padding: 24px 20px 64px 20px;
+  }
 
-.form-group {
-  margin-bottom: 16px;
-}
+  .breadcrumb-wrapper {
+    padding: 12px;
+  }
 
-.form-group:last-child {
-  margin-bottom: 0;
-}
-
-label {
-  display: block;
-  margin-bottom: 7px;
-  font-weight: 500;
-  font-size: 13px;
-  color: #334155;
-}
-
-.required {
-  color: #dc2626;
-}
-
-input,
-textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 400;
-  color: #0f172a;
-  background: #ffffff;
-  line-height: 1.5;
-  transition: border-color 0.15s ease;
-}
-
-input:focus,
-textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  background: #ffffff;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: #94a3b8;
-  font-weight: 400;
-}
-
-.action-footer {
-  margin-top: 24px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-@media (max-width: 640px) {
-  .action-footer {
-    flex-direction: column-reverse;
+  .step-number {
+    width: 24px;
+    height: 24px;
+    font-size: 11px;
   }
 }
 </style>

@@ -1,29 +1,40 @@
 <template>
   <div id="app">
-    <AppNav />
-    <main class="main-content">
+    <AppNav v-if="!isLandingPage" />
+    <main class="main-content" :class="{ 'no-nav': isLandingPage }">
       <router-view />
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, provide } from 'vue'
-import AppNav from './components/AppNav.vue'
+import { ref, provide, computed } from "vue";
+import { useRoute } from "vue-router";
+import AppNav from "./components/AppNav.vue";
+
+const route = useRoute();
+
+// Hide navigation on landing page and auth pages
+const isLandingPage = computed(
+  () =>
+    route.name === "landing" ||
+    route.name === "sign-in" ||
+    route.name === "sign-up"
+);
 
 // Shared state - provided to all views
 const masterProfile = ref({
-  name: '',
-  email: '',
-  phone: '',
-  professionalExperience: '',
-  skills: '',
-  education: '',
-  licenses: '',
-  summary: ''
-})
+  name: "",
+  email: "",
+  phone: "",
+  professionalExperience: "",
+  skills: "",
+  education: "",
+  licenses: "",
+  summary: "",
+});
 
-provide('masterProfile', masterProfile)
+provide("masterProfile", masterProfile);
 </script>
 
 <style>
@@ -34,8 +45,8 @@ provide('masterProfile', masterProfile)
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -62,6 +73,11 @@ body {
   min-height: 100vh;
   background: #f8f9fb;
   overflow-x: hidden;
+  position: relative;
+}
+
+.main-content.no-nav {
+  margin-left: 0;
 }
 
 /* Mobile responsive */
