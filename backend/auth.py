@@ -10,6 +10,7 @@ from jwt import PyJWKClient
 import os
 import base64
 import json
+import certifi
 from typing import Dict
 from functools import lru_cache
 from dotenv import load_dotenv
@@ -67,6 +68,18 @@ def get_jwks_client() -> PyJWKClient:
     jwks_url = f"https://{clerk_domain}/.well-known/jwks.json"
 
     print(f"Using Clerk JWKS URL: {jwks_url}")
+
+    # Use certifi for SSL certificate verification to fix SSL errors on macOS
+    import ssl
+    import urllib.request
+    
+    # Create SSL context with certifi certificates
+    ssl_context = ssl.create_default_context(cafile=certifi.where())
+    
+    # Create a custom opener with the SSL context
+    https_handler = urllib.request.HTTPSHandler(context=ssl_context)
+    opener = urllib.request.build_opener(https_handler)
+    urllib.request.install_opener(opener)
 
     return PyJWKClient(jwks_url)
 
