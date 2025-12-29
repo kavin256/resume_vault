@@ -185,10 +185,13 @@
                     @click="languageDialogOpen = false"
                     variant="outline"
                     type="button"
+                    :disabled="isSavingLanguage"
                   >
                     Cancel
                   </Button>
-                  <Button type="submit"> Add Language </Button>
+                  <Button type="submit" :disabled="isSavingLanguage">
+                    {{ isSavingLanguage ? "Adding..." : "Add Language" }}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -243,6 +246,8 @@ import { defineProps, defineEmits, ref, watch } from "vue";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
+import { useAuth } from "@clerk/vue";
+import { updateMasterProfile } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -271,9 +276,11 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
+const auth = useAuth();
 const formData = props.modelValue;
 
 const languageDialogOpen = ref(false);
+const isSavingLanguage = ref(false);
 
 // Zod schema for language form
 const languageSchema = toTypedSchema(
@@ -300,13 +307,34 @@ watch(languageDialogOpen, (isOpen) => {
 });
 
 const onLanguageSubmit = handleSubmit(
-  (values) => {
-    formData.languages.push({
-      language: values.language,
-      proficiency: values.proficiency,
-    });
-    resetForm();
-    languageDialogOpen.value = false;
+  async (values) => {
+    isSavingLanguage.value = true;
+    try {
+      // Add language to local data
+      formData.languages.push({
+        language: values.language,
+        proficiency: values.proficiency,
+      });
+
+      // Save to database immediately
+      const token = await auth.getToken.value();
+      if (token) {
+        await updateMasterProfile(token, {
+          languages: formData.languages,
+        });
+        console.log("[PersonalInfoStep] Language added and saved to database");
+      }
+
+      resetForm();
+      languageDialogOpen.value = false;
+    } catch (error) {
+      console.error("[PersonalInfoStep] Failed to save language:", error);
+      // Remove the language from local data if save failed
+      formData.languages.pop();
+      alert("Failed to save language. Please try again.");
+    } finally {
+      isSavingLanguage.value = false;
+    }
   },
   (validationErrors) => {
     // On validation failure, mark all error fields as touched
@@ -316,8 +344,27 @@ const onLanguageSubmit = handleSubmit(
   }
 );
 
-function removeLanguage(index) {
+async function removeLanguage(index) {
+  const removedLanguage = formData.languages[index];
+
+  // Remove from local data
   formData.languages.splice(index, 1);
+
+  try {
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        languages: formData.languages,
+      });
+      console.log("[PersonalInfoStep] Language removed and saved to database");
+    }
+  } catch (error) {
+    console.error("[PersonalInfoStep] Failed to remove language:", error);
+    // Restore the language if save failed
+    formData.languages.splice(index, 0, removedLanguage);
+    alert("Failed to remove language. Please try again.");
+  }
 }
 
 function fillDummyData() {
