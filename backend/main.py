@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
     # Create MongoDB indexes
     db = get_database()
     await db["users"].create_index("clerk_user_id", unique=True)
+    await db["users"].create_index("email")  # For orphaned account lookups
     print("✓ MongoDB indexes created")
 
     yield

@@ -66,7 +66,7 @@ async def sync_user(
     logger.info(f"Syncing user: {clerk_user_id}, email: {email}, name: {first_name} {last_name}")
 
     try:
-        # Check if user already exists
+        # Check if user already exists with this clerk_user_id
         existing_user = await users_collection.find_one({"clerk_user_id": clerk_user_id})
 
         if existing_user:
@@ -76,6 +76,36 @@ async def sync_user(
                 user_id=clerk_user_id,
                 message="User already synced"
             )
+
+        # Check for orphaned account (same email, different clerk_user_id)
+        # This happens when user deletes and recreates their Clerk account
+        if email:
+            orphaned_account = await users_collection.find_one({
+                "email": email,
+                "clerk_user_id": {"$ne": clerk_user_id}
+            })
+
+            if orphaned_account:
+                logger.info(f"Found orphaned account for {email}, updating with new clerk_user_id: {clerk_user_id}")
+
+                # Update the orphaned account with new clerk_user_id
+                await users_collection.update_one(
+                    {"_id": orphaned_account["_id"]},
+                    {
+                        "$set": {
+                            "clerk_user_id": clerk_user_id,
+                            "first_name": first_name,
+                            "last_name": last_name,
+                            "updated_at": datetime.utcnow()
+                        }
+                    }
+                )
+
+                return UserSyncResponse(
+                    status="updated",
+                    user_id=clerk_user_id,
+                    message="Account recovered and updated with new credentials"
+                )
 
         # Create new user document
         user_doc = {
