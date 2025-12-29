@@ -10,9 +10,33 @@ from io import BytesIO
 import base64
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from contextlib import asynccontextmanager
+
+# Import database and router modules
+from database import connect_to_mongo, close_mongo_connection, get_database
+from routers import users
 
 
-app = FastAPI(title="Resume Vault Spike")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup/shutdown events"""
+    # Startup
+    print("Starting Resume Vault Backend...")
+    await connect_to_mongo()
+
+    # Create MongoDB indexes
+    db = get_database()
+    await db["users"].create_index("clerk_user_id", unique=True)
+    print("✓ MongoDB indexes created")
+
+    yield
+
+    # Shutdown
+    print("Shutting down Resume Vault Backend...")
+    await close_mongo_connection()
+
+
+app = FastAPI(title="Resume Vault Spike", lifespan=lifespan)
 
 # CORS for local development
 app.add_middleware(
@@ -22,6 +46,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(users.router)
 
 
 class MasterProfile(BaseModel):
