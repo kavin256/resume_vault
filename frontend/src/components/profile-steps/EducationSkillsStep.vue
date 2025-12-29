@@ -1344,88 +1344,111 @@ async function removePublication(index) {
   }
 }
 
-function fillDummyData() {
-  // Education
-  formData.education = [
-    {
-      institution: "Stanford University",
-      degree: "Master of Science",
-      fieldOfStudy: "Computer Science",
-      startYear: "2014",
-      endYear: "2016",
-      grade: "3.9 GPA",
-      description:
-        "Specialized in Distributed Systems and Machine Learning. Teaching Assistant for CS 101.",
-    },
-    {
-      institution: "University of California, Berkeley",
-      degree: "Bachelor of Science",
-      fieldOfStudy: "Computer Engineering",
-      startYear: "2010",
-      endYear: "2014",
-      grade: "3.8 GPA",
-      description:
-        "Dean's List all semesters. President of Computer Science Club.",
-    },
-  ];
+async function fillDummyData() {
+  try {
+    console.log("[EducationSkillsStep] Filling with test data");
 
-  // Skills
-  formData.skills = [
-    { name: "JavaScript", level: "Expert" },
-    { name: "TypeScript", level: "Expert" },
-    { name: "React", level: "Expert" },
-    { name: "Node.js", level: "Advanced" },
-    { name: "Python", level: "Advanced" },
-    { name: "PostgreSQL", level: "Advanced" },
-    { name: "AWS", level: "Intermediate" },
-    { name: "Docker", level: "Advanced" },
-    { name: "GraphQL", level: "Advanced" },
-    { name: "MongoDB", level: "Intermediate" },
-  ];
+    const dummyEducation = [
+      {
+        institution: "Stanford University",
+        degree: "Master of Science",
+        fieldOfStudy: "Computer Science",
+        startYear: "2014",
+        endYear: "2016",
+        grade: "3.9 GPA",
+        description:
+          "Specialized in Distributed Systems and Machine Learning. Teaching Assistant for CS 101.",
+      },
+      {
+        institution: "University of California, Berkeley",
+        degree: "Bachelor of Science",
+        fieldOfStudy: "Computer Engineering",
+        startYear: "2010",
+        endYear: "2014",
+        grade: "3.8 GPA",
+        description:
+          "Dean's List all semesters. President of Computer Science Club.",
+      },
+    ];
 
-  // Certifications
-  formData.certifications = [
-    {
-      name: "AWS Certified Solutions Architect - Professional",
-      issuingOrganization: "Amazon Web Services",
-      issueDate: "2023-05",
-      expirationDate: "2026-05",
-      credentialId: "AWS-PSA-123456",
-      credentialUrl: "https://aws.amazon.com/verification",
-    },
-    {
-      name: "MongoDB Certified Developer",
-      issuingOrganization: "MongoDB Inc.",
-      issueDate: "2022-09",
-      expirationDate: "",
-      credentialId: "MONGO-DEV-789012",
-      credentialUrl: "https://university.mongodb.com/certification",
-    },
-    {
-      name: "Professional Scrum Master I",
-      issuingOrganization: "Scrum.org",
-      issueDate: "2021-03",
-      expirationDate: "",
-      credentialId: "PSM-I-345678",
-      credentialUrl: "https://scrum.org/certificates",
-    },
-  ];
+    const dummySkills = [
+      { name: "JavaScript", level: "Expert" },
+      { name: "TypeScript", level: "Expert" },
+      { name: "React", level: "Expert" },
+      { name: "Node.js", level: "Advanced" },
+      { name: "Python", level: "Advanced" },
+      { name: "PostgreSQL", level: "Advanced" },
+      { name: "AWS", level: "Intermediate" },
+      { name: "Docker", level: "Advanced" },
+      { name: "GraphQL", level: "Advanced" },
+      { name: "MongoDB", level: "Intermediate" },
+    ];
 
-  // Publications
-  formData.publications = [
-    {
-      title: "Optimizing Microservices Performance in Cloud Environments",
-      publisher: "IEEE Software",
-      publicationDate: "2023-11",
-      url: "https://ieeexplore.ieee.org/document/example",
-    },
-    {
-      title: "Best Practices for React Application Architecture",
-      publisher: "Medium Engineering Blog",
-      publicationDate: "2023-06",
-      url: "https://medium.com/engineering/react-architecture",
-    },
-  ];
+    const dummyCertifications = [
+      {
+        name: "AWS Certified Solutions Architect - Professional",
+        issuingOrganization: "Amazon Web Services",
+        issueDate: "2023-05",
+        expirationDate: "2026-05",
+        credentialId: "AWS-PSA-123456",
+        credentialUrl: "https://aws.amazon.com/verification",
+      },
+      {
+        name: "MongoDB Certified Developer",
+        issuingOrganization: "MongoDB Inc.",
+        issueDate: "2022-09",
+        expirationDate: "",
+        credentialId: "MONGO-DEV-789012",
+        credentialUrl: "https://university.mongodb.com/certification",
+      },
+      {
+        name: "Professional Scrum Master I",
+        issuingOrganization: "Scrum.org",
+        issueDate: "2021-03",
+        expirationDate: "",
+        credentialId: "PSM-I-345678",
+        credentialUrl: "https://scrum.org/certificates",
+      },
+    ];
+
+    const dummyPublications = [
+      {
+        title: "Optimizing Microservices Performance in Cloud Environments",
+        publisher: "IEEE Software",
+        publicationDate: "2023-11",
+        url: "https://ieeexplore.ieee.org/document/example",
+      },
+      {
+        title: "Best Practices for React Application Architecture",
+        publisher: "Medium Engineering Blog",
+        publicationDate: "2023-06",
+        url: "https://medium.com/engineering/react-architecture",
+      },
+    ];
+
+    // Save directly to database
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        education: dummyEducation,
+        skills: dummySkills,
+        certifications: dummyCertifications,
+        publications: dummyPublications,
+      });
+      console.log("[EducationSkillsStep] Test data saved to database");
+
+      // Update local state to reflect saved data
+      formData.education = dummyEducation;
+      formData.skills = dummySkills;
+      formData.certifications = dummyCertifications;
+      formData.publications = dummyPublications;
+
+      alert("Test data filled and saved successfully!");
+    }
+  } catch (error) {
+    console.error("[EducationSkillsStep] Error filling test data:", error);
+    alert("Failed to fill test data. Please try again.");
+  }
 }
 
 // Helper function to format month-year dates

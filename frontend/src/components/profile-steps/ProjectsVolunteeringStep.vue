@@ -837,96 +837,125 @@ function updateLocations() {
     .filter((loc) => loc.length > 0);
 }
 
-function fillDummyData() {
-  // Projects
-  formData.projects = [
-    {
-      title: "DevCollab - Real-time Collaboration Platform",
-      description:
-        "Built a real-time code collaboration platform with video chat, shared coding environment, and version control integration. Implemented WebSocket connections for real-time synchronization and WebRTC for video communication.",
-      role: "Full-Stack Developer & Co-founder",
-      technologiesText:
-        "React, Node.js, Socket.io, WebRTC, MongoDB, Redis, AWS",
-      technologies: [
-        "React",
-        "Node.js",
-        "Socket.io",
-        "WebRTC",
-        "MongoDB",
-        "Redis",
-        "AWS",
+async function fillDummyData() {
+  try {
+    console.log("[ProjectsVolunteeringStep] Filling with test data");
+
+    const dummyProjects = [
+      {
+        title: "DevCollab - Real-time Collaboration Platform",
+        description:
+          "Built a real-time code collaboration platform with video chat, shared coding environment, and version control integration. Implemented WebSocket connections for real-time synchronization and WebRTC for video communication.",
+        role: "Full-Stack Developer & Co-founder",
+        technologiesText:
+          "React, Node.js, Socket.io, WebRTC, MongoDB, Redis, AWS",
+        technologies: [
+          "React",
+          "Node.js",
+          "Socket.io",
+          "WebRTC",
+          "MongoDB",
+          "Redis",
+          "AWS",
+        ],
+        link: "https://devcollab.io",
+      },
+      {
+        title: "AITaskOptimizer - Machine Learning Task Scheduler",
+        description:
+          "Developed an intelligent task scheduling system using machine learning to predict task completion times and optimize resource allocation. Achieved 35% improvement in task throughput.",
+        role: "Lead Developer",
+        technologiesText: "Python, TensorFlow, FastAPI, PostgreSQL, Docker",
+        technologies: [
+          "Python",
+          "TensorFlow",
+          "FastAPI",
+          "PostgreSQL",
+          "Docker",
+        ],
+        link: "https://github.com/sarahchen/ai-task-optimizer",
+      },
+      {
+        title: "OpenSourceContrib - Contribution Tracker",
+        description:
+          "Created an open-source contribution tracking tool that aggregates GitHub activity and provides insights on contribution patterns. Used by 500+ developers.",
+        role: "Creator & Maintainer",
+        technologiesText: "TypeScript, Next.js, GraphQL, GitHub API, Vercel",
+        technologies: [
+          "TypeScript",
+          "Next.js",
+          "GraphQL",
+          "GitHub API",
+          "Vercel",
+        ],
+        link: "https://opensourcecontrib.com",
+      },
+    ];
+
+    const dummyVolunteering = [
+      {
+        organization: "Code for Good",
+        role: "Volunteer Developer",
+        startDate: "2021-01",
+        endDate: "",
+        description:
+          "Contribute to open-source projects benefiting non-profit organizations. Led development of a donation management system for local food banks.",
+      },
+      {
+        organization: "Girls Who Code",
+        role: "Mentor & Workshop Facilitator",
+        startDate: "2020-06",
+        endDate: "2023-12",
+        description:
+          "Mentored high school students in web development fundamentals. Conducted monthly workshops on JavaScript, React, and career guidance in tech.",
+      },
+    ];
+
+    const dummyJobPreferences = {
+      desiredRoles: [
+        "Senior Full-Stack Developer",
+        "Tech Lead",
+        "Engineering Manager",
+        "Solutions Architect",
       ],
-      link: "https://devcollab.io",
-    },
-    {
-      title: "AITaskOptimizer - Machine Learning Task Scheduler",
-      description:
-        "Developed an intelligent task scheduling system using machine learning to predict task completion times and optimize resource allocation. Achieved 35% improvement in task throughput.",
-      role: "Lead Developer",
-      technologiesText: "Python, TensorFlow, FastAPI, PostgreSQL, Docker",
-      technologies: ["Python", "TensorFlow", "FastAPI", "PostgreSQL", "Docker"],
-      link: "https://github.com/sarahchen/ai-task-optimizer",
-    },
-    {
-      title: "OpenSourceContrib - Contribution Tracker",
-      description:
-        "Created an open-source contribution tracking tool that aggregates GitHub activity and provides insights on contribution patterns. Used by 500+ developers.",
-      role: "Creator & Maintainer",
-      technologiesText: "TypeScript, Next.js, GraphQL, GitHub API, Vercel",
-      technologies: [
-        "TypeScript",
-        "Next.js",
-        "GraphQL",
-        "GitHub API",
-        "Vercel",
-      ],
-      link: "https://opensourcecontrib.com",
-    },
-  ];
+      employmentTypes: ["Full-time", "Contract"],
+      locations: ["San Francisco, CA", "Remote", "New York, NY", "Seattle, WA"],
+      openToRelocation: true,
+    };
 
-  // Volunteering
-  formData.volunteering = [
-    {
-      organization: "Code for Good",
-      role: "Volunteer Developer",
-      startDate: "2021-01",
-      endDate: "",
-      description:
-        "Contribute to open-source projects benefiting non-profit organizations. Led development of a donation management system for local food banks.",
-    },
-    {
-      organization: "Girls Who Code",
-      role: "Mentor & Workshop Facilitator",
-      startDate: "2020-06",
-      endDate: "2023-12",
-      description:
-        "Mentored high school students in web development fundamentals. Conducted monthly workshops on JavaScript, React, and career guidance in tech.",
-    },
-  ];
+    // Save directly to database
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        projects: dummyProjects,
+        volunteering: dummyVolunteering,
+        jobPreferences: dummyJobPreferences,
+      });
+      console.log("[ProjectsVolunteeringStep] Test data saved to database");
 
-  // Job Preferences
-  formData.jobPreferences.desiredRolesText =
-    "Senior Full-Stack Developer, Tech Lead, Engineering Manager, Solutions Architect";
-  formData.jobPreferences.desiredRoles = [
-    "Senior Full-Stack Developer",
-    "Tech Lead",
-    "Engineering Manager",
-    "Solutions Architect",
-  ];
+      // Update local state to reflect saved data
+      formData.projects = dummyProjects;
+      formData.volunteering = dummyVolunteering;
 
-  formData.jobPreferences.employmentTypesText = "Full-time, Contract";
-  formData.jobPreferences.employmentTypes = ["Full-time", "Contract"];
+      // Update job preferences with text fields for UI
+      formData.jobPreferences.desiredRolesText =
+        "Senior Full-Stack Developer, Tech Lead, Engineering Manager, Solutions Architect";
+      formData.jobPreferences.desiredRoles = dummyJobPreferences.desiredRoles;
+      formData.jobPreferences.employmentTypesText = "Full-time, Contract";
+      formData.jobPreferences.employmentTypes =
+        dummyJobPreferences.employmentTypes;
+      formData.jobPreferences.locationsText =
+        "San Francisco, CA, Remote, New York, NY, Seattle, WA";
+      formData.jobPreferences.locations = dummyJobPreferences.locations;
+      formData.jobPreferences.openToRelocation =
+        dummyJobPreferences.openToRelocation;
 
-  formData.jobPreferences.locationsText =
-    "San Francisco, CA, Remote, New York, NY, Seattle, WA";
-  formData.jobPreferences.locations = [
-    "San Francisco, CA",
-    "Remote",
-    "New York, NY",
-    "Seattle, WA",
-  ];
-
-  formData.jobPreferences.openToRelocation = true;
+      alert("Test data filled and saved successfully!");
+    }
+  } catch (error) {
+    console.error("[ProjectsVolunteeringStep] Error filling test data:", error);
+    alert("Failed to fill test data. Please try again.");
+  }
 }
 </script>
 

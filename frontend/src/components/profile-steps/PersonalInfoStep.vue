@@ -367,32 +367,53 @@ async function removeLanguage(index) {
   }
 }
 
-function fillDummyData() {
-  // Personal Information
-  formData.personalInfo.firstName = "Sarah";
-  formData.personalInfo.lastName = "Chen";
-  formData.personalInfo.email = "sarah.chen@email.com";
-  formData.personalInfo.phone = "+1 (415) 555-0123";
-  formData.personalInfo.location.city = "San Francisco";
-  formData.personalInfo.location.state = "CA";
-  formData.personalInfo.location.country = "United States";
-  formData.personalInfo.linkedinUrl = "https://linkedin.com/in/sarahchen";
-  formData.personalInfo.portfolioUrl = "https://sarahchen.dev";
+async function fillDummyData() {
+  try {
+    console.log("[PersonalInfoStep] Filling with test data");
 
-  // Professional Headline
-  formData.professionalHeadline =
-    "Senior Full-Stack Developer | React & Node.js Specialist | Cloud Architecture Expert";
+    const dummyData = {
+      personalInfo: {
+        firstName: "Sarah",
+        lastName: "Chen",
+        email: "sarah.chen@email.com",
+        phone: "+1 (415) 555-0123",
+        location: {
+          city: "San Francisco",
+          state: "CA",
+          country: "United States",
+        },
+        linkedinUrl: "https://linkedin.com/in/sarahchen",
+        portfolioUrl: "https://sarahchen.dev",
+      },
+      professionalHeadline:
+        "Senior Full-Stack Developer | React & Node.js Specialist | Cloud Architecture Expert",
+      summary:
+        "Innovative Full-Stack Developer with 8+ years of experience building scalable web applications and leading engineering teams. Specialized in React, Node.js, and cloud-native architectures. Proven track record of delivering high-impact projects that improve user experience and drive business growth. Passionate about clean code, mentoring junior developers, and staying current with emerging technologies.",
+      languages: [
+        { language: "English", proficiency: "Native" },
+        { language: "Mandarin Chinese", proficiency: "Professional" },
+        { language: "Spanish", proficiency: "Conversational" },
+      ],
+    };
 
-  // Professional Summary
-  formData.summary =
-    "Innovative Full-Stack Developer with 8+ years of experience building scalable web applications and leading engineering teams. Specialized in React, Node.js, and cloud-native architectures. Proven track record of delivering high-impact projects that improve user experience and drive business growth. Passionate about clean code, mentoring junior developers, and staying current with emerging technologies.";
+    // Save directly to database
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, dummyData);
+      console.log("[PersonalInfoStep] Test data saved to database");
 
-  // Languages
-  formData.languages = [
-    { language: "English", proficiency: "Native" },
-    { language: "Mandarin Chinese", proficiency: "Professional" },
-    { language: "Spanish", proficiency: "Conversational" },
-  ];
+      // Update local state to reflect saved data
+      Object.assign(formData.personalInfo, dummyData.personalInfo);
+      formData.professionalHeadline = dummyData.professionalHeadline;
+      formData.summary = dummyData.summary;
+      formData.languages = dummyData.languages;
+
+      alert("Test data filled and saved successfully!");
+    }
+  } catch (error) {
+    console.error("[PersonalInfoStep] Error filling test data:", error);
+    alert("Failed to fill test data. Please try again.");
+  }
 }
 </script>
 
