@@ -14,6 +14,7 @@
         <CardContent class="pt-6">
           <div class="plan-header">
             <div class="plan-info">
+              <p class="current-plan-label">Current plan</p>
               <div class="plan-badge-container">
                 <h2 class="plan-name">{{ currentPlan.name }}</h2>
               </div>
@@ -25,7 +26,7 @@
               </p>
             </div>
             <Button class="upgrade-btn" v-if="canUpgrade">
-              Upgrade Plan
+              Upgrade plan
             </Button>
           </div>
 
@@ -422,10 +423,10 @@ function selectPlan(tier) {
 
 /* Current Plan Card */
 .current-plan-card {
-  margin-bottom: 48px;
+  margin-bottom: 36px;
   border: 2px solid #e2e8f0;
-  border-radius: 20px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
   background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
 }
 
@@ -433,8 +434,8 @@ function selectPlan(tier) {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 32px;
-  padding-bottom: 24px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
   border-bottom: 2px solid #e2e8f0;
 }
 
@@ -445,8 +446,16 @@ function selectPlan(tier) {
   flex-wrap: wrap;
 }
 
+.current-plan-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin: 0 0 6px 0;
+  letter-spacing: 0.3px;
+}
+
 .plan-name {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -463,17 +472,17 @@ function selectPlan(tier) {
 }
 
 .plan-price {
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 700;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  margin: 8px 0 0 0;
+  margin: 6px 0 0 0;
 }
 
 .billing-cycle {
-  font-size: 18px;
+  font-size: 16px;
   color: #64748b;
   font-weight: 500;
 }
@@ -483,7 +492,8 @@ function selectPlan(tier) {
   color: white;
   border: none;
   font-weight: 600;
-  padding: 12px 24px;
+  font-size: 14px;
+  padding: 10px 20px;
   transition: all 0.3s ease;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
@@ -538,8 +548,7 @@ function selectPlan(tier) {
   font-weight: 600;
   color: #64748b;
   margin: 0 0 4px 0;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .metric-value {

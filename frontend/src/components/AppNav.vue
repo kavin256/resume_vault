@@ -141,6 +141,10 @@
 
       <!-- User Profile Section -->
       <div class="nav-footer">
+        <div class="current-plan-display" v-if="currentPlan">
+          <div class="plan-label-simple">Current Plan</div>
+          <div class="plan-name-gradient">{{ currentPlan.name }}</div>
+        </div>
         <div class="user-section" v-if="user" @click="handleUserClick">
           <div class="user-info">
             <div class="user-avatar">
@@ -186,6 +190,7 @@
             <UserButton :after-sign-out-url="'/'" />
           </div>
         </div>
+        <div class="copyright-text">RVault v.1.1.1 @2025 copyright</div>
       </div>
     </div>
   </nav>
@@ -195,9 +200,16 @@
 import { ref, computed } from "vue";
 import { Button } from "@/components/ui/button";
 import { UserButton, useUser } from "@clerk/vue";
+import pricingData from "@/data/pricing-tiers.json";
 
 const mobileMenuOpen = ref(false);
 const { user } = useUser();
+
+// Current plan (mock data - will come from API later)
+const currentPlanId = ref(2); // Pro Job Hunter
+const currentPlan = computed(() => {
+  return pricingData.tiers.find((tier) => tier.id === currentPlanId.value);
+});
 
 const displayName = computed(() => {
   if (!user.value) return "";
@@ -248,9 +260,9 @@ function closeMobileMenu() {
   top: 0;
   height: 100vh;
   width: 260px;
-  background: #ffffff;
+  background: linear-gradient(to bottom, #ffffff 0%, #fafbfc 100%);
   border-right: 1px solid #e5e7eb;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.06);
   z-index: 100;
   overflow-y: auto;
 }
@@ -267,13 +279,18 @@ function closeMobileMenu() {
   align-items: center;
   gap: 12px;
   color: #0f172a;
-  padding: 0 24px;
-  margin-bottom: 40px;
+  padding: 0 24px 24px 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .nav-brand-desktop svg {
   flex-shrink: 0;
-  color: #3b82f6;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 6px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 
 .brand-text {
@@ -298,30 +315,48 @@ function closeMobileMenu() {
   font-weight: 500;
   color: #64748b;
   text-decoration: none;
-  border-radius: 8px;
-  transition: all 0.15s ease;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
 .nav-link svg {
   flex-shrink: 0;
   color: currentColor;
+  transition: all 0.2s ease;
 }
 
 .nav-link:hover {
   color: #0f172a;
-  background: #f8fafc;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  transform: translateX(2px);
 }
 
 .nav-link.router-link-active {
-  color: #3b82f6;
-  background: #eff6ff;
+  color: #667eea;
+  background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.nav-link.router-link-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 0 3px 3px 0;
 }
 
 /* User Footer Section */
 .nav-footer {
   margin-top: auto;
-  padding: 16px 24px;
-  border-top: 1px solid #e5e7eb;
+  padding: 16px 0;
+  background: linear-gradient(to top, #fafbfc 0%, transparent 100%);
+  border-top: 1px solid #f1f5f9;
 }
 
 .user-section {
@@ -330,20 +365,24 @@ function closeMobileMenu() {
   gap: 12px;
   cursor: pointer;
   position: relative;
+  padding: 0 16px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px;
-  background: #f8fafc;
-  border-radius: 8px;
-  transition: all 0.15s ease;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  border: 1px solid #e5e7eb;
 }
 
 .user-section:hover .user-info {
-  background: #e5e7eb;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .user-button-hidden {
@@ -351,6 +390,42 @@ function closeMobileMenu() {
   opacity: 0;
   pointer-events: none;
   z-index: -1;
+}
+
+.current-plan-display {
+  padding: 12px 16px;
+  margin: 0 16px 12px 16px;
+  text-align: center;
+  background: linear-gradient(135deg, #fafbfc 0%, #f8fafc 100%);
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.plan-label-simple {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.plan-name-gradient {
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding-left: 0;
+}
+
+.copyright-text {
+  padding: 16px 20px;
+  text-align: center;
+  font-size: 11px;
+  color: #94a3b8;
+  border-top: 1px solid #e5e7eb;
+  margin-top: auto;
 }
 
 .user-avatar {
