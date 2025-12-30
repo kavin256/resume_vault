@@ -185,10 +185,13 @@
                     @click="languageDialogOpen = false"
                     variant="outline"
                     type="button"
+                    :disabled="isSavingLanguage"
                   >
                     Cancel
                   </Button>
-                  <Button type="submit"> Add Language </Button>
+                  <Button type="submit" :disabled="isSavingLanguage">
+                    {{ isSavingLanguage ? "Adding..." : "Add Language" }}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -243,6 +246,8 @@ import { defineProps, defineEmits, ref, watch } from "vue";
 import { useForm } from "vee-validate";
 import { toTypedSchema } from "@vee-validate/zod";
 import * as z from "zod";
+import { useAuth } from "@clerk/vue";
+import { updateMasterProfile } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -271,9 +276,11 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
+const auth = useAuth();
 const formData = props.modelValue;
 
 const languageDialogOpen = ref(false);
+const isSavingLanguage = ref(false);
 
 // Zod schema for language form
 const languageSchema = toTypedSchema(
@@ -300,13 +307,34 @@ watch(languageDialogOpen, (isOpen) => {
 });
 
 const onLanguageSubmit = handleSubmit(
-  (values) => {
-    formData.languages.push({
-      language: values.language,
-      proficiency: values.proficiency,
-    });
-    resetForm();
-    languageDialogOpen.value = false;
+  async (values) => {
+    isSavingLanguage.value = true;
+    try {
+      // Add language to local data
+      formData.languages.push({
+        language: values.language,
+        proficiency: values.proficiency,
+      });
+
+      // Save to database immediately
+      const token = await auth.getToken.value();
+      if (token) {
+        await updateMasterProfile(token, {
+          languages: formData.languages,
+        });
+        console.log("[PersonalInfoStep] Language added and saved to database");
+      }
+
+      resetForm();
+      languageDialogOpen.value = false;
+    } catch (error) {
+      console.error("[PersonalInfoStep] Failed to save language:", error);
+      // Remove the language from local data if save failed
+      formData.languages.pop();
+      alert("Failed to save language. Please try again.");
+    } finally {
+      isSavingLanguage.value = false;
+    }
   },
   (validationErrors) => {
     // On validation failure, mark all error fields as touched
@@ -316,36 +344,76 @@ const onLanguageSubmit = handleSubmit(
   }
 );
 
-function removeLanguage(index) {
+async function removeLanguage(index) {
+  const removedLanguage = formData.languages[index];
+
+  // Remove from local data
   formData.languages.splice(index, 1);
+
+  try {
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        languages: formData.languages,
+      });
+      console.log("[PersonalInfoStep] Language removed and saved to database");
+    }
+  } catch (error) {
+    console.error("[PersonalInfoStep] Failed to remove language:", error);
+    // Restore the language if save failed
+    formData.languages.splice(index, 0, removedLanguage);
+    alert("Failed to remove language. Please try again.");
+  }
 }
 
-function fillDummyData() {
-  // Personal Information
-  formData.personalInfo.firstName = "Sarah";
-  formData.personalInfo.lastName = "Chen";
-  formData.personalInfo.email = "sarah.chen@email.com";
-  formData.personalInfo.phone = "+1 (415) 555-0123";
-  formData.personalInfo.location.city = "San Francisco";
-  formData.personalInfo.location.state = "CA";
-  formData.personalInfo.location.country = "United States";
-  formData.personalInfo.linkedinUrl = "https://linkedin.com/in/sarahchen";
-  formData.personalInfo.portfolioUrl = "https://sarahchen.dev";
+async function fillDummyData() {
+  try {
+    console.log("[PersonalInfoStep] Filling with test data");
 
-  // Professional Headline
-  formData.professionalHeadline =
-    "Senior Full-Stack Developer | React & Node.js Specialist | Cloud Architecture Expert";
+    const dummyData = {
+      personalInfo: {
+        firstName: "Sarah",
+        lastName: "Chen",
+        email: "sarah.chen@email.com",
+        phone: "+1 (415) 555-0123",
+        location: {
+          city: "San Francisco",
+          state: "CA",
+          country: "United States",
+        },
+        linkedinUrl: "https://linkedin.com/in/sarahchen",
+        portfolioUrl: "https://sarahchen.dev",
+      },
+      professionalHeadline:
+        "Senior Full-Stack Developer | React & Node.js Specialist | Cloud Architecture Expert",
+      summary:
+        "Innovative Full-Stack Developer with 8+ years of experience building scalable web applications and leading engineering teams. Specialized in React, Node.js, and cloud-native architectures. Proven track record of delivering high-impact projects that improve user experience and drive business growth. Passionate about clean code, mentoring junior developers, and staying current with emerging technologies.",
+      languages: [
+        { language: "English", proficiency: "Native" },
+        { language: "Mandarin Chinese", proficiency: "Professional" },
+        { language: "Spanish", proficiency: "Conversational" },
+      ],
+    };
 
-  // Professional Summary
-  formData.summary =
-    "Innovative Full-Stack Developer with 8+ years of experience building scalable web applications and leading engineering teams. Specialized in React, Node.js, and cloud-native architectures. Proven track record of delivering high-impact projects that improve user experience and drive business growth. Passionate about clean code, mentoring junior developers, and staying current with emerging technologies.";
+    // Save directly to database
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, dummyData);
+      console.log("[PersonalInfoStep] Test data saved to database");
 
-  // Languages
-  formData.languages = [
-    { language: "English", proficiency: "Native" },
-    { language: "Mandarin Chinese", proficiency: "Professional" },
-    { language: "Spanish", proficiency: "Conversational" },
-  ];
+      // Update local state to reflect saved data
+      Object.assign(formData.personalInfo, dummyData.personalInfo);
+      formData.professionalHeadline = dummyData.professionalHeadline;
+      formData.summary = dummyData.summary;
+      formData.languages = dummyData.languages;
+
+      alert("Test data filled and saved successfully!");
+    }
+  } catch (error) {
+    console.error("[PersonalInfoStep] Error filling test data:", error);
+    alert("Failed to fill test data. Please try again.");
+  }
 }
 </script>
 

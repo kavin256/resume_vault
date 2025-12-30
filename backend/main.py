@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 
 # Import database and router modules
 from database import connect_to_mongo, close_mongo_connection, get_database
-from routers import users
+from routers import users, profiles
 
 
 @asynccontextmanager
@@ -28,6 +28,7 @@ async def lifespan(app: FastAPI):
     db = get_database()
     await db["users"].create_index("clerk_user_id", unique=True)
     await db["users"].create_index("email")  # For orphaned account lookups
+    await db["master_profiles"].create_index("userId", unique=True)  # Master profile index
     print("✓ MongoDB indexes created")
 
     yield
@@ -50,6 +51,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(users.router)
+app.include_router(profiles.router)
 
 
 class MasterProfile(BaseModel):

@@ -69,6 +69,9 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { useAuth } from "@clerk/vue";
+import { useUserSync } from "@/composables/useUserSync";
+import { getMasterProfile, updateMasterProfile } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import {
   Breadcrumb,
@@ -84,8 +87,13 @@ import EducationSkillsStep from "@/components/profile-steps/EducationSkillsStep.
 import ProjectsVolunteeringStep from "@/components/profile-steps/ProjectsVolunteeringStep.vue";
 
 const router = useRouter();
+const auth = useAuth();
+const { masterProfile, isLoadingProfile } = useUserSync();
 const currentStep = ref(0);
 const saving = ref(false);
+
+// Track original profile data for change detection
+const originalProfileData = ref(null);
 
 const steps = [
   { label: "Personal Info & Summary", key: "personalInfo" },
@@ -134,67 +142,156 @@ onMounted(async () => {
 
 async function loadProfile() {
   try {
-    const response = await fetch("http://localhost:8000/profile");
-    if (response.ok) {
-      const data = await response.json();
-      if (data.profile) {
-        Object.assign(profileData, data.profile);
+    // If profile is already loaded from useUserSync, use it
+    if (masterProfile.value) {
+      console.log("[ProfileView] Using profile from useUserSync");
+      Object.assign(profileData, masterProfile.value);
+      restoreTextFields();
+      // Store original data for change detection
+      originalProfileData.value = JSON.parse(
+        JSON.stringify(masterProfile.value)
+      );
+      return;
+    }
 
-        // Restore text fields for arrays
-        if (profileData.jobPreferences) {
-          profileData.jobPreferences.desiredRolesText =
-            profileData.jobPreferences.desiredRoles?.join(", ") || "";
-          profileData.jobPreferences.employmentTypesText =
-            profileData.jobPreferences.employmentTypes?.join(", ") || "";
-          profileData.jobPreferences.locationsText =
-            profileData.jobPreferences.locations?.join(", ") || "";
-        }
+    // Otherwise, fetch it directly
+    console.log("[ProfileView] Fetching profile directly");
+    const token = await auth.getToken.value();
+    if (!token) {
+      console.error("[ProfileView] No auth token available");
+      return;
+    }
 
-        // Restore text fields for work experience
-        profileData.workExperience.forEach((exp) => {
-          exp.responsibilitiesText = exp.responsibilities?.join("\n• ") || "";
-          exp.achievementsText = exp.achievements?.join("\n• ") || "";
-          exp.technologiesText = exp.technologies?.join(", ") || "";
-        });
-
-        // Restore text fields for projects
-        profileData.projects.forEach((project) => {
-          project.technologiesText = project.technologies?.join(", ") || "";
-        });
-      }
+    const response = await getMasterProfile(token);
+    if (response && response.profile) {
+      Object.assign(profileData, response.profile);
+      restoreTextFields();
+      // Store original data for change detection
+      originalProfileData.value = JSON.parse(JSON.stringify(response.profile));
+      console.log(`[ProfileView] Profile ${response.status}`);
     }
   } catch (error) {
-    console.error("Failed to load profile:", error);
+    console.error("[ProfileView] Failed to load profile:", error);
   }
 }
 
-async function saveProfile() {
+function restoreTextFields() {
+  // Restore text fields for arrays
+  if (profileData.jobPreferences) {
+    profileData.jobPreferences.desiredRolesText =
+      profileData.jobPreferences.desiredRoles?.join(", ") || "";
+    profileData.jobPreferences.employmentTypesText =
+      profileData.jobPreferences.employmentTypes?.join(", ") || "";
+    profileData.jobPreferences.locationsText =
+      profileData.jobPreferences.locations?.join(", ") || "";
+  }
+
+  // Restore text fields for work experience
+  if (profileData.workExperience) {
+    profileData.workExperience.forEach((exp) => {
+      exp.responsibilitiesText = exp.responsibilities?.join("\n• ") || "";
+      exp.achievementsText = exp.achievements?.join("\n• ") || "";
+      exp.technologiesText = exp.technologies?.join(", ") || "";
+    });
+  }
+
+  // Restore text fields for projects
+  if (profileData.projects) {
+    profileData.projects.forEach((project) => {
+      project.technologiesText = project.technologies?.join(", ") || "";
+    });
+  }
+}
+
+/**
+ * Check if specific fields have changed
+ * @param {Array<string>} fields - Array of dot-notation field paths to check
+ * @returns {boolean} - True if any field has changed
+ */
+function hasChanges(fields) {
+  if (!originalProfileData.value) return true; // If no original data, assume changes
+
+  for (const field of fields) {
+    const currentValue = getNestedValue(profileData, field);
+    const originalValue = getNestedValue(originalProfileData.value, field);
+
+    // Deep comparison for objects and arrays
+    if (JSON.stringify(currentValue) !== JSON.stringify(originalValue)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Get nested value from object using dot notation
+ * @param {Object} obj - Object to get value from
+ * @param {string} path - Dot-notation path (e.g., 'personalInfo.firstName')
+ * @returns {any} - Value at path
+ */
+function getNestedValue(obj, path) {
+  return path.split(".").reduce((current, key) => current?.[key], obj);
+}
+
+/**
+ * Save profile with change detection
+ * @param {Array<string>} fieldsToCheck - Optional array of field paths to check for changes
+ * @returns {Promise<boolean>} - True if saved, false if no changes
+ */
+async function saveProfile(fieldsToCheck = null) {
+  // If specific fields provided, check only those fields
+  if (fieldsToCheck && fieldsToCheck.length > 0) {
+    if (!hasChanges(fieldsToCheck)) {
+      console.log("[ProfileView] No changes detected, skipping save");
+      return false;
+    }
+  }
+
   saving.value = true;
   try {
-    const response = await fetch("http://localhost:8000/profile", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ profile: profileData }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to save profile");
+    const token = await auth.getToken.value();
+    if (!token) {
+      throw new Error("No authentication token available");
     }
 
-    const result = await response.json();
-    console.log("Profile saved:", result);
+    const response = await updateMasterProfile(token, profileData);
+    console.log("[ProfileView] Profile saved:", response.status);
+
+    // Update original data after successful save
+    originalProfileData.value = JSON.parse(JSON.stringify(profileData));
+    return true;
   } catch (error) {
-    console.error("Error saving profile:", error);
+    console.error("[ProfileView] Error saving profile:", error);
     alert("Failed to save profile. Please try again.");
+    return false;
   } finally {
     saving.value = false;
   }
 }
 
 async function nextStep() {
-  await saveProfile();
+  // For Personal Info step (step 0), check only Personal Info and Professional Profile fields
+  if (currentStep.value === 0) {
+    const personalInfoFields = [
+      "personalInfo.firstName",
+      "personalInfo.lastName",
+      "personalInfo.email",
+      "personalInfo.phone",
+      "personalInfo.location.city",
+      "personalInfo.location.country",
+      "personalInfo.linkedinUrl",
+      "personalInfo.portfolioUrl",
+      "professionalHeadline",
+      "summary",
+      "languages",
+    ];
+    await saveProfile(personalInfoFields);
+  } else {
+    // For other steps, save everything
+    await saveProfile();
+  }
+
   if (currentStep.value < steps.length - 1) {
     currentStep.value++;
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -214,8 +311,63 @@ function goToStep(index) {
 }
 
 async function finishProfile() {
-  await saveProfile();
-  router.push("/home");
+  saving.value = true;
+
+  try {
+    // Check if job preferences have any data
+    const hasJobPreferences =
+      profileData.jobPreferences.desiredRolesText?.trim() ||
+      profileData.jobPreferences.employmentTypesText?.trim() ||
+      profileData.jobPreferences.locationsText?.trim() ||
+      profileData.jobPreferences.openToRelocation;
+
+    if (hasJobPreferences) {
+      console.log("[ProfileView] Saving job preferences");
+
+      // Parse comma-separated text fields to arrays
+      const desiredRoles =
+        profileData.jobPreferences.desiredRolesText
+          ?.split(",")
+          .map((role) => role.trim())
+          .filter((role) => role.length > 0) || [];
+
+      const employmentTypes =
+        profileData.jobPreferences.employmentTypesText
+          ?.split(",")
+          .map((type) => type.trim())
+          .filter((type) => type.length > 0) || [];
+
+      const locations =
+        profileData.jobPreferences.locationsText
+          ?.split(",")
+          .map((loc) => loc.trim())
+          .filter((loc) => loc.length > 0) || [];
+
+      const token = await auth.getToken.value();
+      if (token) {
+        await updateMasterProfile(token, {
+          jobPreferences: {
+            desiredRoles,
+            employmentTypes,
+            locations,
+            openToRelocation:
+              profileData.jobPreferences.openToRelocation || false,
+          },
+        });
+        console.log("[ProfileView] Job preferences saved successfully");
+      }
+    } else {
+      console.log("[ProfileView] No job preferences to save");
+    }
+
+    // Navigate to Home vault screen
+    router.push("/home");
+  } catch (error) {
+    console.error("[ProfileView] Error saving job preferences:", error);
+    alert("Failed to save job preferences. Please try again.");
+  } finally {
+    saving.value = false;
+  }
 }
 </script>
 

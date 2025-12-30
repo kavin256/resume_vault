@@ -59,9 +59,17 @@
         </DialogTrigger>
         <DialogContent class="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Work Experience</DialogTitle>
+            <DialogTitle>{{
+              editingIndex !== null
+                ? "Edit Work Experience"
+                : "Add Work Experience"
+            }}</DialogTitle>
             <DialogDescription>
-              Add your professional work experience details.
+              {{
+                editingIndex !== null
+                  ? "Update your professional work experience details."
+                  : "Add your professional work experience details."
+              }}
             </DialogDescription>
           </DialogHeader>
           <form @submit="onExperienceSubmit" class="dialog-form">
@@ -187,11 +195,18 @@
                 @click="experienceDialogOpen = false"
                 variant="outline"
                 type="button"
+                :disabled="isSaving"
               >
                 Cancel
               </Button>
               <Button type="submit" :disabled="isSaving">
-                {{ isSaving ? "Saving..." : "Save Experience" }}
+                {{
+                  isSaving
+                    ? "Saving..."
+                    : editingIndex !== null
+                    ? "Update Experience"
+                    : "Save Experience"
+                }}
               </Button>
             </DialogFooter>
           </form>
@@ -217,28 +232,51 @@
                 {{ exp.currentlyWorking ? "Present" : formatDate(exp.endDate) }}
               </p>
             </div>
-            <Button
-              @click="removeExperience(index)"
-              size="sm"
-              variant="ghost"
-              class="delete-btn"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+            <div class="card-actions">
+              <Button
+                @click="editExperience(index)"
+                size="sm"
+                variant="ghost"
+                class="edit-btn"
               >
-                <path d="M3 6h18" />
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-              </svg>
-            </Button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  <path d="m15 5 4 4" />
+                </svg>
+              </Button>
+              <Button
+                @click="removeExperience(index)"
+                size="sm"
+                variant="ghost"
+                class="delete-btn"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+              </Button>
+            </div>
           </div>
 
           <!-- Responsibilities -->
@@ -296,7 +334,9 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits, ref } from "vue";
+import { defineProps, defineEmits, ref, watch } from "vue";
+import { useAuth } from "@clerk/vue";
+import { updateMasterProfile } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -318,9 +358,11 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
+const auth = useAuth();
 const formData = props.modelValue;
 const experienceDialogOpen = ref(false);
 const isSaving = ref(false);
+const editingIndex = ref(null); // null means adding new, number means editing
 
 const experienceForm = ref({
   jobTitle: "",
@@ -333,6 +375,14 @@ const experienceForm = ref({
   responsibilitiesText: "",
   achievementsText: "",
   technologiesText: "",
+});
+
+// Reset form when dialog closes
+watch(experienceDialogOpen, (isOpen) => {
+  if (!isOpen) {
+    resetExperienceForm();
+    editingIndex.value = null;
+  }
 });
 
 function resetExperienceForm() {
@@ -384,41 +434,97 @@ async function onExperienceSubmit(event) {
       : [];
 
     const experienceData = {
-      ...experienceForm.value,
+      jobTitle: experienceForm.value.jobTitle,
+      companyName: experienceForm.value.companyName,
+      employmentType: experienceForm.value.employmentType,
+      location: experienceForm.value.location,
+      startDate: experienceForm.value.startDate,
+      endDate: experienceForm.value.endDate,
+      currentlyWorking: experienceForm.value.currentlyWorking,
       responsibilities,
       achievements,
       technologies,
     };
 
-    // Save to backend
-    const response = await fetch("http://localhost:8000/experience", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ experience: experienceData }),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to save experience");
+    // Update local state
+    if (editingIndex.value !== null) {
+      // Update existing experience
+      formData.workExperience[editingIndex.value] = experienceData;
+      console.log(
+        "[WorkExperienceStep] Updating experience at index:",
+        editingIndex.value
+      );
+    } else {
+      // Add new experience
+      formData.workExperience.push(experienceData);
+      console.log("[WorkExperienceStep] Adding new experience");
     }
 
-    // Add to local state
-    formData.workExperience.push(experienceData);
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        workExperience: formData.workExperience,
+      });
+      console.log("[WorkExperienceStep] Work experience saved to database");
+    }
 
     // Reset form and close dialog
     resetExperienceForm();
+    editingIndex.value = null;
     experienceDialogOpen.value = false;
   } catch (error) {
-    console.error("Error saving experience:", error);
+    console.error("[WorkExperienceStep] Error saving experience:", error);
     alert("Failed to save experience. Please try again.");
   } finally {
     isSaving.value = false;
   }
 }
 
-function removeExperience(index) {
+async function removeExperience(index) {
+  const removedExperience = formData.workExperience[index];
+
+  // Remove from local state
   formData.workExperience.splice(index, 1);
+
+  try {
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        workExperience: formData.workExperience,
+      });
+      console.log(
+        "[WorkExperienceStep] Work experience removed and saved to database"
+      );
+    }
+  } catch (error) {
+    console.error("[WorkExperienceStep] Failed to remove experience:", error);
+    // Restore the experience if save failed
+    formData.workExperience.splice(index, 0, removedExperience);
+    alert("Failed to remove experience. Please try again.");
+  }
+}
+
+function editExperience(index) {
+  const exp = formData.workExperience[index];
+
+  // Populate form with existing data
+  experienceForm.value = {
+    jobTitle: exp.jobTitle || "",
+    companyName: exp.companyName || "",
+    employmentType: exp.employmentType || "Full-time",
+    location: exp.location || "",
+    startDate: exp.startDate || "",
+    endDate: exp.endDate || "",
+    currentlyWorking: exp.currentlyWorking || false,
+    responsibilitiesText: exp.responsibilities?.join("\n• ") || "",
+    achievementsText: exp.achievements?.join("\n• ") || "",
+    technologiesText: exp.technologies?.join(", ") || "",
+  };
+
+  editingIndex.value = index;
+  experienceDialogOpen.value = true;
 }
 
 function formatDate(dateString) {
@@ -428,113 +534,134 @@ function formatDate(dateString) {
   return date.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-function fillDummyData() {
-  formData.workExperience = [
-    {
-      jobTitle: "Senior Full-Stack Developer",
-      companyName: "TechCorp Solutions",
-      employmentType: "Full-time",
-      location: "San Francisco, CA",
-      startDate: "2020-03",
-      endDate: "",
-      currentlyWorking: true,
-      responsibilitiesText:
-        "• Led development of microservices architecture serving 2M+ users\n• Mentored team of 5 junior developers and conducted code reviews\n• Architected and implemented CI/CD pipeline reducing deployment time by 60%\n• Collaborated with product team to define technical requirements and roadmap",
-      responsibilities: [
-        "Led development of microservices architecture serving 2M+ users",
-        "Mentored team of 5 junior developers and conducted code reviews",
-        "Architected and implemented CI/CD pipeline reducing deployment time by 60%",
-        "Collaborated with product team to define technical requirements and roadmap",
-      ],
-      achievementsText:
-        "• Improved application performance by 45% through optimization and caching strategies\n• Reduced bug count by 70% by implementing comprehensive testing suite\n• Received 'Outstanding Performance' award for Q3 2023",
-      achievements: [
-        "Improved application performance by 45% through optimization and caching strategies",
-        "Reduced bug count by 70% by implementing comprehensive testing suite",
-        "Received 'Outstanding Performance' award for Q3 2023",
-      ],
-      technologiesText:
-        "React, Node.js, TypeScript, PostgreSQL, AWS, Docker, Kubernetes, GraphQL, Redis",
-      technologies: [
-        "React",
-        "Node.js",
-        "TypeScript",
-        "PostgreSQL",
-        "AWS",
-        "Docker",
-        "Kubernetes",
-        "GraphQL",
-        "Redis",
-      ],
-    },
-    {
-      jobTitle: "Full-Stack Developer",
-      companyName: "StartupHub Inc",
-      employmentType: "Full-time",
-      location: "Remote",
-      startDate: "2018-01",
-      endDate: "2020-02",
-      currentlyWorking: false,
-      responsibilitiesText:
-        "• Developed and maintained web applications using React and Node.js\n• Built RESTful APIs and integrated third-party services\n• Implemented responsive UI components following design specifications\n• Participated in agile ceremonies and sprint planning",
-      responsibilities: [
-        "Developed and maintained web applications using React and Node.js",
-        "Built RESTful APIs and integrated third-party services",
-        "Implemented responsive UI components following design specifications",
-        "Participated in agile ceremonies and sprint planning",
-      ],
-      achievementsText:
-        "• Successfully launched 3 major features ahead of schedule\n• Reduced API response time by 30% through optimization\n• Contributed to 95% code coverage through unit and integration tests",
-      achievements: [
-        "Successfully launched 3 major features ahead of schedule",
-        "Reduced API response time by 30% through optimization",
-        "Contributed to 95% code coverage through unit and integration tests",
-      ],
-      technologiesText: "React, Node.js, Express, MongoDB, Jest, Git, Jira",
-      technologies: [
-        "React",
-        "Node.js",
-        "Express",
-        "MongoDB",
-        "Jest",
-        "Git",
-        "Jira",
-      ],
-    },
-    {
-      jobTitle: "Junior Software Developer",
-      companyName: "Digital Innovations Ltd",
-      employmentType: "Full-time",
-      location: "New York, NY",
-      startDate: "2016-06",
-      endDate: "2017-12",
-      currentlyWorking: false,
-      responsibilitiesText:
-        "• Assisted in developing front-end features using HTML, CSS, and JavaScript\n• Fixed bugs and performed code maintenance on existing applications\n• Collaborated with senior developers on feature implementation\n• Participated in daily standups and code reviews",
-      responsibilities: [
-        "Assisted in developing front-end features using HTML, CSS, and JavaScript",
-        "Fixed bugs and performed code maintenance on existing applications",
-        "Collaborated with senior developers on feature implementation",
-        "Participated in daily standups and code reviews",
-      ],
-      achievementsText:
-        "• Resolved 150+ bugs during tenure\n• Implemented automated testing reducing manual QA time by 40%\n• Recognized as 'Most Improved Developer' in 2017",
-      achievements: [
-        "Resolved 150+ bugs during tenure",
-        "Implemented automated testing reducing manual QA time by 40%",
-        "Recognized as 'Most Improved Developer' in 2017",
-      ],
-      technologiesText: "JavaScript, HTML, CSS, jQuery, Bootstrap, MySQL",
-      technologies: [
-        "JavaScript",
-        "HTML",
-        "CSS",
-        "jQuery",
-        "Bootstrap",
-        "MySQL",
-      ],
-    },
-  ];
+async function fillDummyData() {
+  try {
+    console.log("[WorkExperienceStep] Filling with test data");
+
+    const dummyWorkExperience = [
+      {
+        jobTitle: "Senior Full-Stack Developer",
+        companyName: "TechCorp Solutions",
+        employmentType: "Full-time",
+        location: "San Francisco, CA",
+        startDate: "2020-03",
+        endDate: "",
+        currentlyWorking: true,
+        responsibilitiesText:
+          "• Led development of microservices architecture serving 2M+ users\n• Mentored team of 5 junior developers and conducted code reviews\n• Architected and implemented CI/CD pipeline reducing deployment time by 60%\n• Collaborated with product team to define technical requirements and roadmap",
+        responsibilities: [
+          "Led development of microservices architecture serving 2M+ users",
+          "Mentored team of 5 junior developers and conducted code reviews",
+          "Architected and implemented CI/CD pipeline reducing deployment time by 60%",
+          "Collaborated with product team to define technical requirements and roadmap",
+        ],
+        achievementsText:
+          "• Improved application performance by 45% through optimization and caching strategies\n• Reduced bug count by 70% by implementing comprehensive testing suite\n• Received 'Outstanding Performance' award for Q3 2023",
+        achievements: [
+          "Improved application performance by 45% through optimization and caching strategies",
+          "Reduced bug count by 70% by implementing comprehensive testing suite",
+          "Received 'Outstanding Performance' award for Q3 2023",
+        ],
+        technologiesText:
+          "React, Node.js, TypeScript, PostgreSQL, AWS, Docker, Kubernetes, GraphQL, Redis",
+        technologies: [
+          "React",
+          "Node.js",
+          "TypeScript",
+          "PostgreSQL",
+          "AWS",
+          "Docker",
+          "Kubernetes",
+          "GraphQL",
+          "Redis",
+        ],
+      },
+      {
+        jobTitle: "Full-Stack Developer",
+        companyName: "StartupHub Inc",
+        employmentType: "Full-time",
+        location: "Remote",
+        startDate: "2018-01",
+        endDate: "2020-02",
+        currentlyWorking: false,
+        responsibilitiesText:
+          "• Developed and maintained web applications using React and Node.js\n• Built RESTful APIs and integrated third-party services\n• Implemented responsive UI components following design specifications\n• Participated in agile ceremonies and sprint planning",
+        responsibilities: [
+          "Developed and maintained web applications using React and Node.js",
+          "Built RESTful APIs and integrated third-party services",
+          "Implemented responsive UI components following design specifications",
+          "Participated in agile ceremonies and sprint planning",
+        ],
+        achievementsText:
+          "• Successfully launched 3 major features ahead of schedule\n• Reduced API response time by 30% through optimization\n• Contributed to 95% code coverage through unit and integration tests",
+        achievements: [
+          "Successfully launched 3 major features ahead of schedule",
+          "Reduced API response time by 30% through optimization",
+          "Contributed to 95% code coverage through unit and integration tests",
+        ],
+        technologiesText: "React, Node.js, Express, MongoDB, Jest, Git, Jira",
+        technologies: [
+          "React",
+          "Node.js",
+          "Express",
+          "MongoDB",
+          "Jest",
+          "Git",
+          "Jira",
+        ],
+      },
+      {
+        jobTitle: "Junior Software Developer",
+        companyName: "Digital Innovations Ltd",
+        employmentType: "Full-time",
+        location: "New York, NY",
+        startDate: "2016-06",
+        endDate: "2017-12",
+        currentlyWorking: false,
+        responsibilitiesText:
+          "• Assisted in developing front-end features using HTML, CSS, and JavaScript\n• Fixed bugs and performed code maintenance on existing applications\n• Collaborated with senior developers on feature implementation\n• Participated in daily standups and code reviews",
+        responsibilities: [
+          "Assisted in developing front-end features using HTML, CSS, and JavaScript",
+          "Fixed bugs and performed code maintenance on existing applications",
+          "Collaborated with senior developers on feature implementation",
+          "Participated in daily standups and code reviews",
+        ],
+        achievementsText:
+          "• Resolved 150+ bugs during tenure\n• Implemented automated testing reducing manual QA time by 40%\n• Recognized as 'Most Improved Developer' in 2017",
+        achievements: [
+          "Resolved 150+ bugs during tenure",
+          "Implemented automated testing reducing manual QA time by 40%",
+          "Recognized as 'Most Improved Developer' in 2017",
+        ],
+        technologiesText: "JavaScript, HTML, CSS, jQuery, Bootstrap, MySQL",
+        technologies: [
+          "JavaScript",
+          "HTML",
+          "CSS",
+          "jQuery",
+          "Bootstrap",
+          "MySQL",
+        ],
+      },
+    ];
+
+    // Save directly to database
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        workExperience: dummyWorkExperience,
+      });
+      console.log("[WorkExperienceStep] Test data saved to database");
+
+      // Update local state to reflect saved data
+      formData.workExperience = dummyWorkExperience;
+
+      alert("Test data filled and saved successfully!");
+    }
+  } catch (error) {
+    console.error("[WorkExperienceStep] Error filling test data:", error);
+    alert("Failed to fill test data. Please try again.");
+  }
 }
 </script>
 
@@ -591,6 +718,11 @@ function fillDummyData() {
   margin-bottom: 20px;
 }
 
+.card-actions {
+  display: flex;
+  gap: 4px;
+}
+
 .form-section-title {
   font-size: 18px;
   font-weight: 600;
@@ -600,6 +732,17 @@ function fillDummyData() {
 
 .remove-btn {
   color: #ef4444;
+}
+
+.edit-btn {
+  color: #3b82f6;
+  padding: 8px;
+  height: auto;
+}
+
+.edit-btn:hover {
+  background: #dbeafe;
+  color: #2563eb;
 }
 
 .delete-btn {

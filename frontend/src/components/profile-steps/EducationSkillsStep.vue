@@ -306,14 +306,14 @@
                   <path d="M12 8v8" />
                   <path d="M8 12h8" />
                 </svg>
-                Add Skill
+                Add Skills
               </Button>
             </DialogTrigger>
             <DialogContent class="max-w-md">
               <DialogHeader>
-                <DialogTitle>Add Skill</DialogTitle>
+                <DialogTitle>Add Skills</DialogTitle>
                 <DialogDescription>
-                  Add a skill to your profile.
+                  Add your skills one at a time. Click "Done" when finished.
                 </DialogDescription>
               </DialogHeader>
               <form @submit="onSkillSubmit" class="dialog-form">
@@ -333,10 +333,16 @@
                     @click="skillDialogOpen = false"
                     variant="outline"
                     type="button"
+                    :disabled="isSavingSkill"
                   >
-                    Cancel
+                    Done
                   </Button>
-                  <Button type="submit">Add Skill</Button>
+                  <Button
+                    type="submit"
+                    :disabled="isSavingSkill || !skillForm.name.trim()"
+                  >
+                    {{ isSavingSkill ? "Adding..." : "Add Skill" }}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -521,6 +527,7 @@
                     @click="certificationDialogOpen = false"
                     variant="outline"
                     type="button"
+                    :disabled="isSavingCertification"
                   >
                     Cancel
                   </Button>
@@ -756,6 +763,7 @@
                     @click="publicationDialogOpen = false"
                     variant="outline"
                     type="button"
+                    :disabled="isSavingPublication"
                   >
                     Cancel
                   </Button>
@@ -861,6 +869,8 @@
 
 <script setup>
 import { defineProps, defineEmits, ref } from "vue";
+import { useAuth } from "@clerk/vue";
+import { updateMasterProfile } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -882,6 +892,7 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
+const auth = useAuth();
 const formData = props.modelValue;
 
 // Education
@@ -917,21 +928,44 @@ async function onEducationSubmit(event) {
   isSavingEducation.value = true;
 
   try {
+    const educationData = {
+      institution: educationForm.value.institution,
+      degree: educationForm.value.degree,
+      fieldOfStudy: educationForm.value.fieldOfStudy,
+      startYear: educationForm.value.startYear,
+      endYear: educationForm.value.endYear,
+      grade: educationForm.value.grade,
+      description: educationForm.value.description,
+    };
+
+    // Update local state
     if (editingEducationIndex.value !== null) {
       // Update existing education
-      formData.education[editingEducationIndex.value] = {
-        ...educationForm.value,
-      };
+      formData.education[editingEducationIndex.value] = educationData;
+      console.log(
+        "[EducationSkillsStep] Updating education at index:",
+        editingEducationIndex.value
+      );
     } else {
       // Add new education
-      formData.education.push({ ...educationForm.value });
+      formData.education.push(educationData);
+      console.log("[EducationSkillsStep] Adding new education");
+    }
+
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        education: formData.education,
+      });
+      console.log("[EducationSkillsStep] Education saved to database");
     }
 
     // Reset form and close dialog
     resetEducationForm();
     educationDialogOpen.value = false;
   } catch (error) {
-    console.error("Error saving education:", error);
+    console.error("[EducationSkillsStep] Error saving education:", error);
     alert("Failed to save education. Please try again.");
   } finally {
     isSavingEducation.value = false;
@@ -969,12 +1003,34 @@ function addEducation() {
   });
 }
 
-function removeEducation(index) {
+async function removeEducation(index) {
+  const removedEducation = formData.education[index];
+
+  // Remove from local state
   formData.education.splice(index, 1);
+
+  try {
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        education: formData.education,
+      });
+      console.log(
+        "[EducationSkillsStep] Education removed and saved to database"
+      );
+    }
+  } catch (error) {
+    console.error("[EducationSkillsStep] Failed to remove education:", error);
+    // Restore the education if save failed
+    formData.education.splice(index, 0, removedEducation);
+    alert("Failed to remove education. Please try again.");
+  }
 }
 
 // Skills
 const skillDialogOpen = ref(false);
+const isSavingSkill = ref(false);
 const skillForm = ref({
   name: "",
 });
@@ -988,10 +1044,43 @@ function resetSkillForm() {
 async function onSkillSubmit(event) {
   event.preventDefault();
 
-  if (skillForm.value.name.trim()) {
-    formData.skills.push({ name: skillForm.value.name.trim() });
+  if (!skillForm.value.name.trim()) {
+    return;
+  }
+
+  isSavingSkill.value = true;
+
+  try {
+    const skillData = { name: skillForm.value.name.trim() };
+
+    // Add to local state
+    formData.skills.push(skillData);
+    console.log("[EducationSkillsStep] Adding new skill:", skillData.name);
+
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        skills: formData.skills,
+      });
+      console.log("[EducationSkillsStep] Skill saved to database");
+    }
+
+    // Reset form but keep dialog open
     resetSkillForm();
-    skillDialogOpen.value = false;
+
+    // Focus back on input for next skill
+    setTimeout(() => {
+      const input = document.querySelector('input[placeholder="JavaScript"]');
+      if (input) input.focus();
+    }, 100);
+  } catch (error) {
+    console.error("[EducationSkillsStep] Error saving skill:", error);
+    // Remove the skill if save failed
+    formData.skills.pop();
+    alert("Failed to save skill. Please try again.");
+  } finally {
+    isSavingSkill.value = false;
   }
 }
 
@@ -1002,8 +1091,27 @@ function addSkill() {
   });
 }
 
-function removeSkill(index) {
+async function removeSkill(index) {
+  const removedSkill = formData.skills[index];
+
+  // Remove from local state
   formData.skills.splice(index, 1);
+
+  try {
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        skills: formData.skills,
+      });
+      console.log("[EducationSkillsStep] Skill removed and saved to database");
+    }
+  } catch (error) {
+    console.error("[EducationSkillsStep] Failed to remove skill:", error);
+    // Restore the skill if save failed
+    formData.skills.splice(index, 0, removedSkill);
+    alert("Failed to remove skill. Please try again.");
+  }
 }
 
 // Certifications
@@ -1037,21 +1145,44 @@ async function onCertificationSubmit(event) {
   isSavingCertification.value = true;
 
   try {
+    const certificationData = {
+      name: certificationForm.value.name,
+      issuingOrganization: certificationForm.value.issuingOrganization,
+      issueDate: certificationForm.value.issueDate,
+      expirationDate: certificationForm.value.expirationDate,
+      credentialId: certificationForm.value.credentialId,
+      credentialUrl: certificationForm.value.credentialUrl,
+    };
+
+    // Update local state
     if (editingCertificationIndex.value !== null) {
       // Update existing certification
-      formData.certifications[editingCertificationIndex.value] = {
-        ...certificationForm.value,
-      };
+      formData.certifications[editingCertificationIndex.value] =
+        certificationData;
+      console.log(
+        "[EducationSkillsStep] Updating certification at index:",
+        editingCertificationIndex.value
+      );
     } else {
       // Add new certification
-      formData.certifications.push({ ...certificationForm.value });
+      formData.certifications.push(certificationData);
+      console.log("[EducationSkillsStep] Adding new certification");
+    }
+
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        certifications: formData.certifications,
+      });
+      console.log("[EducationSkillsStep] Certification saved to database");
     }
 
     // Reset form and close dialog
     resetCertificationForm();
     certificationDialogOpen.value = false;
   } catch (error) {
-    console.error("Error saving certification:", error);
+    console.error("[EducationSkillsStep] Error saving certification:", error);
     alert("Failed to save certification. Please try again.");
   } finally {
     isSavingCertification.value = false;
@@ -1077,8 +1208,32 @@ function onCertificationDialogChange(isOpen) {
   }
 }
 
-function removeCertification(index) {
+async function removeCertification(index) {
+  const removedCertification = formData.certifications[index];
+
+  // Remove from local state
   formData.certifications.splice(index, 1);
+
+  try {
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        certifications: formData.certifications,
+      });
+      console.log(
+        "[EducationSkillsStep] Certification removed and saved to database"
+      );
+    }
+  } catch (error) {
+    console.error(
+      "[EducationSkillsStep] Failed to remove certification:",
+      error
+    );
+    // Restore the certification if save failed
+    formData.certifications.splice(index, 0, removedCertification);
+    alert("Failed to remove certification. Please try again.");
+  }
 }
 
 // Publications
@@ -1108,21 +1263,37 @@ async function onPublicationSubmit(event) {
   isSavingPublication.value = true;
 
   try {
+    const publicationData = {
+      title: publicationForm.value.title,
+      publisher: publicationForm.value.publisher,
+      publicationDate: publicationForm.value.publicationDate,
+      url: publicationForm.value.url,
+    };
+
     if (editingPublicationIndex.value !== null) {
       // Update existing publication
-      formData.publications[editingPublicationIndex.value] = {
-        ...publicationForm.value,
-      };
+      console.log("[EducationSkillsStep] Updating publication");
+      formData.publications[editingPublicationIndex.value] = publicationData;
     } else {
       // Add new publication
-      formData.publications.push({ ...publicationForm.value });
+      console.log("[EducationSkillsStep] Adding new publication");
+      formData.publications.push(publicationData);
+    }
+
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        publications: formData.publications,
+      });
+      console.log("[EducationSkillsStep] Publication saved to database");
     }
 
     // Reset form and close dialog
     resetPublicationForm();
     publicationDialogOpen.value = false;
   } catch (error) {
-    console.error("Error saving publication:", error);
+    console.error("[EducationSkillsStep] Error saving publication:", error);
     alert("Failed to save publication. Please try again.");
   } finally {
     isSavingPublication.value = false;
@@ -1148,92 +1319,136 @@ function onPublicationDialogChange(isOpen) {
   }
 }
 
-function removePublication(index) {
+async function removePublication(index) {
+  const removedPublication = formData.publications[index];
+
+  // Remove from local state
   formData.publications.splice(index, 1);
+
+  try {
+    // Save to database immediately
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        publications: formData.publications,
+      });
+      console.log(
+        "[EducationSkillsStep] Publication removed and saved to database"
+      );
+    }
+  } catch (error) {
+    console.error("[EducationSkillsStep] Failed to remove publication:", error);
+    // Restore the publication if save failed
+    formData.publications.splice(index, 0, removedPublication);
+    alert("Failed to remove publication. Please try again.");
+  }
 }
 
-function fillDummyData() {
-  // Education
-  formData.education = [
-    {
-      institution: "Stanford University",
-      degree: "Master of Science",
-      fieldOfStudy: "Computer Science",
-      startYear: "2014",
-      endYear: "2016",
-      grade: "3.9 GPA",
-      description:
-        "Specialized in Distributed Systems and Machine Learning. Teaching Assistant for CS 101.",
-    },
-    {
-      institution: "University of California, Berkeley",
-      degree: "Bachelor of Science",
-      fieldOfStudy: "Computer Engineering",
-      startYear: "2010",
-      endYear: "2014",
-      grade: "3.8 GPA",
-      description:
-        "Dean's List all semesters. President of Computer Science Club.",
-    },
-  ];
+async function fillDummyData() {
+  try {
+    console.log("[EducationSkillsStep] Filling with test data");
 
-  // Skills
-  formData.skills = [
-    { name: "JavaScript", level: "Expert" },
-    { name: "TypeScript", level: "Expert" },
-    { name: "React", level: "Expert" },
-    { name: "Node.js", level: "Advanced" },
-    { name: "Python", level: "Advanced" },
-    { name: "PostgreSQL", level: "Advanced" },
-    { name: "AWS", level: "Intermediate" },
-    { name: "Docker", level: "Advanced" },
-    { name: "GraphQL", level: "Advanced" },
-    { name: "MongoDB", level: "Intermediate" },
-  ];
+    const dummyEducation = [
+      {
+        institution: "Stanford University",
+        degree: "Master of Science",
+        fieldOfStudy: "Computer Science",
+        startYear: "2014",
+        endYear: "2016",
+        grade: "3.9 GPA",
+        description:
+          "Specialized in Distributed Systems and Machine Learning. Teaching Assistant for CS 101.",
+      },
+      {
+        institution: "University of California, Berkeley",
+        degree: "Bachelor of Science",
+        fieldOfStudy: "Computer Engineering",
+        startYear: "2010",
+        endYear: "2014",
+        grade: "3.8 GPA",
+        description:
+          "Dean's List all semesters. President of Computer Science Club.",
+      },
+    ];
 
-  // Certifications
-  formData.certifications = [
-    {
-      name: "AWS Certified Solutions Architect - Professional",
-      issuingOrganization: "Amazon Web Services",
-      issueDate: "2023-05",
-      expirationDate: "2026-05",
-      credentialId: "AWS-PSA-123456",
-      credentialUrl: "https://aws.amazon.com/verification",
-    },
-    {
-      name: "MongoDB Certified Developer",
-      issuingOrganization: "MongoDB Inc.",
-      issueDate: "2022-09",
-      expirationDate: "",
-      credentialId: "MONGO-DEV-789012",
-      credentialUrl: "https://university.mongodb.com/certification",
-    },
-    {
-      name: "Professional Scrum Master I",
-      issuingOrganization: "Scrum.org",
-      issueDate: "2021-03",
-      expirationDate: "",
-      credentialId: "PSM-I-345678",
-      credentialUrl: "https://scrum.org/certificates",
-    },
-  ];
+    const dummySkills = [
+      { name: "JavaScript", level: "Expert" },
+      { name: "TypeScript", level: "Expert" },
+      { name: "React", level: "Expert" },
+      { name: "Node.js", level: "Advanced" },
+      { name: "Python", level: "Advanced" },
+      { name: "PostgreSQL", level: "Advanced" },
+      { name: "AWS", level: "Intermediate" },
+      { name: "Docker", level: "Advanced" },
+      { name: "GraphQL", level: "Advanced" },
+      { name: "MongoDB", level: "Intermediate" },
+    ];
 
-  // Publications
-  formData.publications = [
-    {
-      title: "Optimizing Microservices Performance in Cloud Environments",
-      publisher: "IEEE Software",
-      publicationDate: "2023-11",
-      url: "https://ieeexplore.ieee.org/document/example",
-    },
-    {
-      title: "Best Practices for React Application Architecture",
-      publisher: "Medium Engineering Blog",
-      publicationDate: "2023-06",
-      url: "https://medium.com/engineering/react-architecture",
-    },
-  ];
+    const dummyCertifications = [
+      {
+        name: "AWS Certified Solutions Architect - Professional",
+        issuingOrganization: "Amazon Web Services",
+        issueDate: "2023-05",
+        expirationDate: "2026-05",
+        credentialId: "AWS-PSA-123456",
+        credentialUrl: "https://aws.amazon.com/verification",
+      },
+      {
+        name: "MongoDB Certified Developer",
+        issuingOrganization: "MongoDB Inc.",
+        issueDate: "2022-09",
+        expirationDate: "",
+        credentialId: "MONGO-DEV-789012",
+        credentialUrl: "https://university.mongodb.com/certification",
+      },
+      {
+        name: "Professional Scrum Master I",
+        issuingOrganization: "Scrum.org",
+        issueDate: "2021-03",
+        expirationDate: "",
+        credentialId: "PSM-I-345678",
+        credentialUrl: "https://scrum.org/certificates",
+      },
+    ];
+
+    const dummyPublications = [
+      {
+        title: "Optimizing Microservices Performance in Cloud Environments",
+        publisher: "IEEE Software",
+        publicationDate: "2023-11",
+        url: "https://ieeexplore.ieee.org/document/example",
+      },
+      {
+        title: "Best Practices for React Application Architecture",
+        publisher: "Medium Engineering Blog",
+        publicationDate: "2023-06",
+        url: "https://medium.com/engineering/react-architecture",
+      },
+    ];
+
+    // Save directly to database
+    const token = await auth.getToken.value();
+    if (token) {
+      await updateMasterProfile(token, {
+        education: dummyEducation,
+        skills: dummySkills,
+        certifications: dummyCertifications,
+        publications: dummyPublications,
+      });
+      console.log("[EducationSkillsStep] Test data saved to database");
+
+      // Update local state to reflect saved data
+      formData.education = dummyEducation;
+      formData.skills = dummySkills;
+      formData.certifications = dummyCertifications;
+      formData.publications = dummyPublications;
+
+      alert("Test data filled and saved successfully!");
+    }
+  } catch (error) {
+    console.error("[EducationSkillsStep] Error filling test data:", error);
+    alert("Failed to fill test data. Please try again.");
+  }
 }
 
 // Helper function to format month-year dates
