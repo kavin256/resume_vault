@@ -17,24 +17,7 @@
     <Card class="form-card section-card">
       <CardContent class="pt-6">
         <div class="section-header">
-          <div class="section-title-with-icon">
-            <svg
-              class="section-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-            <h3 class="form-section-title">Projects</h3>
-          </div>
+          <h3 class="form-section-title">Projects</h3>
           <Dialog
             :open="projectDialogOpen"
             @update:open="onProjectDialogChange"
@@ -245,25 +228,7 @@
     <Card class="form-card section-card">
       <CardContent class="pt-6">
         <div class="section-header">
-          <div class="section-title-with-icon">
-            <svg
-              class="section-icon"
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path
-                d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"
-              />
-            </svg>
-            <h3 class="form-section-title">Volunteering</h3>
-          </div>
+          <h3 class="form-section-title">Volunteering</h3>
           <Dialog
             :open="volunteeringDialogOpen"
             @update:open="onVolunteeringDialogChange"
@@ -471,24 +436,7 @@
     <!-- Job Preferences (Optional) -->
     <Card class="form-card section-card">
       <CardContent class="pt-6">
-        <div class="section-title-with-icon">
-          <svg
-            class="section-icon"
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect width="20" height="14" x="2" y="7" rx="2" ry="2" />
-            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-          </svg>
-          <h3 class="form-section-title">Job Preferences (Optional)</h3>
-        </div>
+        <h3 class="form-section-title">Job Preferences (Optional)</h3>
 
         <div class="form-group">
           <label>Desired Roles</label>
@@ -986,16 +934,32 @@ async function fillDummyData() {
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 8px 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .step-description {
   font-size: 16px;
   color: #64748b;
   margin: 0 0 32px 0;
+  line-height: 1.6;
 }
 
 .form-card {
   margin-bottom: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+}
+
+.form-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
 }
 
 .section-card {
@@ -1014,7 +978,7 @@ async function fillDummyData() {
 }
 
 .section-icon {
-  color: #3b82f6;
+  color: #667eea;
   flex-shrink: 0;
 }
 
@@ -1023,6 +987,17 @@ async function fillDummyData() {
   font-weight: 600;
   color: #0f172a;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-section-title::before {
+  content: "";
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
 }
 
 .section-header {
@@ -1036,26 +1011,30 @@ async function fillDummyData() {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  font-weight: 500;
+  padding: 10px 20px;
+  font-weight: 600;
   font-size: 14px;
   border-radius: 8px;
-  border: 1.5px solid #e5e7eb;
   background: white;
-  color: #0f172a;
-  transition: all 0.2s ease;
+  color: #667eea;
+  border: 2px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
 .add-item-btn:hover {
-  border-color: #0f172a;
-  background: #f8fafc;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-image: linear-gradient(135deg, #f8f9ff 0%, #faf8ff 100%), linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+  color: #5568d3;
 }
 
 .add-item-btn:active {
   transform: translateY(0);
-  box-shadow: none;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
 .btn-icon {
@@ -1278,6 +1257,38 @@ async function fillDummyData() {
   flex-direction: column;
   gap: 16px;
   padding: 16px 0;
+}
+
+.dialog-form button[type="submit"] {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
+}
+
+.dialog-form button[type="submit"]:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.dialog-form button[variant="outline"] {
+  background: white;
+  color: #667eea;
+  border: 2px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.dialog-form button[variant="outline"]:hover {
+  background-image: linear-gradient(135deg, #f8f9ff 0%, #faf8ff 100%), linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transform: translateY(-2px);
+  color: #5568d3;
 }
 
 .dialog-form .form-row {
