@@ -123,6 +123,20 @@
           </svg>
           <span>Generate Resume</span>
         </router-link>
+        <router-link to="/billing" class="nav-link" @click="closeMobileMenu">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="3" y="5" width="18" height="14" rx="2" ry="2"></rect>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span>Billing</span>
+        </router-link>
       </div>
 
       <!-- User Profile Section -->

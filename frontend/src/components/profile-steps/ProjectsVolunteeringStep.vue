@@ -1018,7 +1018,8 @@ async function fillDummyData() {
   background: white;
   color: #667eea;
   border: 2px solid transparent;
-  background-image: linear-gradient(white, white), linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-image: linear-gradient(white, white),
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-origin: border-box;
   background-clip: padding-box, border-box;
   transition: all 0.3s ease;
@@ -1026,7 +1027,8 @@ async function fillDummyData() {
 }
 
 .add-item-btn:hover {
-  background-image: linear-gradient(135deg, #f8f9ff 0%, #faf8ff 100%), linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-image: linear-gradient(135deg, #f8f9ff 0%, #faf8ff 100%),
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
   color: #5568d3;
@@ -1278,7 +1280,8 @@ async function fillDummyData() {
   background: white;
   color: #667eea;
   border: 2px solid transparent;
-  background-image: linear-gradient(white, white), linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-image: linear-gradient(white, white),
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   background-origin: border-box;
   background-clip: padding-box, border-box;
   font-weight: 500;
@@ -1286,7 +1289,8 @@ async function fillDummyData() {
 }
 
 .dialog-form button[variant="outline"]:hover {
-  background-image: linear-gradient(135deg, #f8f9ff 0%, #faf8ff 100%), linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-image: linear-gradient(135deg, #f8f9ff 0%, #faf8ff 100%),
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   transform: translateY(-2px);
   color: #5568d3;
 }
