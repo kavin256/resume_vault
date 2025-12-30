@@ -68,6 +68,22 @@
         <h3>Documents Ready</h3>
       </div>
       <p class="download-description">Your resume and cover letter have been generated successfully.</p>
+
+      <div class="ats-scores">
+        <div class="ats-score-item">
+          <div class="ats-score-label">Resume ATS Score</div>
+          <div class="ats-score-value" :class="getScoreClass(resumeAtsScore)">
+            {{ resumeAtsScore }}%
+          </div>
+        </div>
+        <div class="ats-score-item">
+          <div class="ats-score-label">Cover Letter ATS Score</div>
+          <div class="ats-score-value" :class="getScoreClass(coverLetterAtsScore)">
+            {{ coverLetterAtsScore }}%
+          </div>
+        </div>
+      </div>
+
       <div class="download-buttons">
         <Button @click="downloadResume" variant="secondary" class="flex-1 button-with-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -87,10 +103,11 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue'
+import { ref } from 'vue'
+import { useAuth } from '@clerk/vue'
 import { Button } from '@/components/ui/button'
 
-const masterProfile = inject('masterProfile')
+const auth = useAuth()
 const jobDescription = ref('')
 const companyName = ref('')
 const position = ref('')
@@ -100,6 +117,8 @@ const isGenerating = ref(false)
 const generated = ref(false)
 const resumeBase64 = ref('')
 const coverLetterBase64 = ref('')
+const resumeAtsScore = ref(0)
+const coverLetterAtsScore = ref(0)
 const error = ref('')
 
 async function handleGenerate() {
@@ -108,13 +127,20 @@ async function handleGenerate() {
   generated.value = false
 
   try {
+    // Get authentication token
+    const token = await auth.getToken.value()
+    if (!token) {
+      throw new Error('No authentication token. Please sign in.')
+    }
+
+    // Backend now fetches master profile from database using authenticated user
     const response = await fetch('http://localhost:8000/generate', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({
-        master_profile: masterProfile.value,
         job_description: jobDescription.value,
         company_name: companyName.value,
         position: position.value,
@@ -124,15 +150,18 @@ async function handleGenerate() {
     })
 
     if (!response.ok) {
-      throw new Error('Generation failed')
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || 'Generation failed')
     }
 
     const data = await response.json()
     resumeBase64.value = data.resume_base64
     coverLetterBase64.value = data.cover_letter_base64
+    resumeAtsScore.value = data.resume_ats_score
+    coverLetterAtsScore.value = data.cover_letter_ats_score
     generated.value = true
   } catch (err) {
-    error.value = 'Failed to generate documents. Make sure the backend is running.'
+    error.value = err.message || 'Failed to generate documents. Make sure the backend is running.'
     console.error(err)
   } finally {
     isGenerating.value = false
@@ -193,6 +222,13 @@ What We Offer:
 • Professional development budget
 • Collaborative and innovative work environment`
   }
+}
+
+function getScoreClass(score) {
+  if (score >= 85) return 'score-excellent'
+  if (score >= 70) return 'score-good'
+  if (score >= 60) return 'score-fair'
+  return 'score-poor'
 }
 
 function downloadResume() {
@@ -422,8 +458,62 @@ textarea::placeholder {
 .download-description {
   font-size: 15px;
   color: #64748b;
-  margin: 0 0 24px 0;
+  margin: 0 0 20px 0;
   line-height: 1.5;
+}
+
+.ats-scores {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.ats-score-item {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+}
+
+.ats-score-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ats-score-value {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.score-excellent {
+  color: #16a34a;
+}
+
+.score-good {
+  color: #2563eb;
+}
+
+.score-fair {
+  color: #ea580c;
+}
+
+.score-poor {
+  color: #dc2626;
+}
+
+@media (max-width: 640px) {
+  .ats-scores {
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 
 .download-buttons {
