@@ -1,7 +1,7 @@
 <script setup>
 import { DialogClose, DialogContent, useForwardPropsEmits } from "reka-ui";
 import { X } from "lucide-vue-next";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils.js";
 import DialogOverlay from "./DialogOverlay.vue";
 import DialogPortal from "./DialogPortal.vue";
 

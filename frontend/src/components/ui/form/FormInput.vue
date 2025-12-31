@@ -1,7 +1,7 @@
 <script setup>
 import { toValue } from "vue";
 import { useFormField } from "./useFormField";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils.js";
 
 defineOptions({
   inheritAttrs: false,
