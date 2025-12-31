@@ -4,6 +4,7 @@ import LandingView from "../views/LandingView.vue";
 import HomeView from "../views/HomeView.vue";
 import ProfileView from "../views/ProfileView.vue";
 import GenerateView from "../views/GenerateView.vue";
+import BillingView from "../views/BillingView.vue";
 import SignInView from "../views/SignInView.vue";
 import SignUpView from "../views/SignUpView.vue";
 
@@ -44,6 +45,12 @@ const router = createRouter({
       path: "/generate",
       name: "generate",
       component: GenerateView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/billing",
+      name: "billing",
+      component: BillingView,
       meta: { requiresAuth: true },
     },
   ],
