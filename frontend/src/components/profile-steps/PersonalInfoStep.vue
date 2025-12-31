@@ -138,7 +138,9 @@
             @update:open="languageDialogOpen = $event"
           >
             <DialogTrigger>
-              <Button size="sm" variant="outline"> + Add Language </Button>
+              <Button class="add-language-btn" size="sm">
+                + Add Language
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -444,16 +446,32 @@ async function fillDummyData() {
   font-weight: 700;
   color: #0f172a;
   margin: 0 0 8px 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .step-description {
   font-size: 16px;
   color: #64748b;
   margin: 0 0 32px 0;
+  line-height: 1.6;
 }
 
 .form-card {
   margin-bottom: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+}
+
+.form-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: #cbd5e1;
+  transform: translateY(-2px);
 }
 
 .form-section-title {
@@ -461,6 +479,17 @@ async function fillDummyData() {
   font-weight: 600;
   color: #0f172a;
   margin: 0 0 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-section-title::before {
+  content: "";
+  width: 4px;
+  height: 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 2px;
 }
 
 .section-header {
@@ -468,6 +497,48 @@ async function fillDummyData() {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section-header .form-section-title {
+    width: 100%;
+  }
+}
+
+.add-language-btn {
+  background: white;
+  color: #667eea;
+  border: 2px solid transparent;
+  background-image: linear-gradient(white, white),
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  font-weight: 500;
+  padding: 10px 20px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.add-language-btn:hover {
+  background-image: linear-gradient(135deg, #f8f9ff 0%, #faf8ff 100%),
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+  color: #5568d3;
+}
+
+@media (max-width: 640px) {
+  .add-language-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Dialog Form */
@@ -478,28 +549,85 @@ async function fillDummyData() {
   padding: 16px 0;
 }
 
+.dialog-form button[type="submit"] {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
+}
+
+.dialog-form button[type="submit"]:hover {
+  background: linear-gradient(135deg, #5568d3 0%, #653a8a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.dialog-form button[variant="outline"] {
+  background: white;
+  color: #667eea;
+  border: 2px solid transparent;
+  background-image: linear-gradient(white, white),
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.dialog-form button[variant="outline"]:hover {
+  background-image: linear-gradient(135deg, #f8f9ff 0%, #faf8ff 100%),
+    linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transform: translateY(-2px);
+  color: #5568d3;
+}
+
 /* Languages List */
 .languages-list {
   display: flex;
   flex-direction: column;
   gap: 0;
+  margin-top: 8px;
 }
 
 .language-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid #e5e7eb;
-  transition: all 0.2s ease;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+  gap: 16px;
+}
+
+.language-item:first-child {
+  border-radius: 12px 12px 0 0;
 }
 
 .language-item:last-child {
   border-bottom: none;
+  border-radius: 0 0 12px 12px;
+}
+
+.language-item:only-child {
+  border-radius: 12px;
 }
 
 .language-item:hover {
-  opacity: 0.8;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transform: translateX(4px);
+}
+
+@media (max-width: 640px) {
+  .language-item {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 12px;
+  }
 }
 
 .language-info {
@@ -507,6 +635,16 @@ async function fillDummyData() {
   align-items: center;
   gap: 16px;
   flex: 1;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .language-info {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 }
 
 .language-name {
@@ -516,34 +654,81 @@ async function fillDummyData() {
   min-width: 150px;
 }
 
+@media (max-width: 640px) {
+  .language-name {
+    min-width: auto;
+    font-size: 14px;
+  }
+}
+
 .language-proficiency {
   font-size: 14px;
-  color: #64748b;
-  padding: 4px 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  color: #667eea;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.language-proficiency:hover {
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  border-color: #c7d2fe;
+}
+
+@media (max-width: 640px) {
+  .language-proficiency {
+    font-size: 13px;
+    padding: 4px 12px;
+  }
 }
 
 .delete-btn {
   color: #ef4444;
   padding: 8px;
   height: auto;
+  min-width: 40px;
+  transition: all 0.2s ease;
+  border-radius: 8px;
 }
 
 .delete-btn:hover {
-  background: #fee2e2;
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
   color: #dc2626;
+  transform: scale(1.05);
+}
+
+@media (max-width: 640px) {
+  .delete-btn {
+    align-self: flex-end;
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .empty-state {
-  padding: 32px;
+  padding: 40px 32px;
   text-align: center;
-  color: #9ca3af;
+  color: #94a3b8;
   font-size: 14px;
-  background: #f9fafb;
-  border: 1px dashed #e5e7eb;
-  border-radius: 8px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  margin-top: 8px;
+  transition: all 0.3s ease;
+}
+
+.empty-state:hover {
+  border-color: #cbd5e1;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+@media (max-width: 640px) {
+  .empty-state {
+    padding: 32px 20px;
+    font-size: 13px;
+  }
 }
 
 .form-row {

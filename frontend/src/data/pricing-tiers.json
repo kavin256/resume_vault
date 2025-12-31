@@ -1,0 +1,99 @@
+{
+  "tiers": [
+    {
+      "id": 0,
+      "name": "Starter Trial",
+      "price": 1,
+      "billingCycle": "one-time",
+      "popular": false,
+      "features": [
+        "Manual data input",
+        "Upload resume & extract data (1 resume)",
+        "Upload JD & generate ATS resume",
+        "10 PDF generations",
+        "Basic ATS score",
+        "Single resume template",
+        "10 job tracking"
+      ],
+      "limits": {
+        "pdfGenerations": 10,
+        "coverLetters": 0,
+        "resumeUploads": 1,
+        "jobTracking": 10,
+        "templates": 1
+      }
+    },
+    {
+      "id": 1,
+      "name": "Basic Job Seeker",
+      "price": 9,
+      "billingCycle": "monthly",
+      "popular": false,
+      "features": [
+        "Manual data input",
+        "Resume upload & extraction",
+        "JD → ATS-friendly resume",
+        "30 PDF generations / month",
+        "Basic ATS score",
+        "Maintain applied job records (limited)",
+        "1 resume template",
+        "Resume history (last 20)"
+      ],
+      "limits": {
+        "pdfGenerations": 30,
+        "coverLetters": 10,
+        "resumeUploads": 5,
+        "jobTracking": 50,
+        "templates": 1
+      }
+    },
+    {
+      "id": 2,
+      "name": "Pro Job Hunter",
+      "price": 19,
+      "billingCycle": "monthly",
+      "popular": true,
+      "badge": "MOST POPULAR",
+      "features": [
+        "Everything in Tier 1",
+        "LinkedIn profile import",
+        "75 PDF generations / month",
+        "Advanced ATS score + keyword gaps",
+        "JD-based resume tailoring",
+        "Regenerate summary / experience sections",
+        "Multiple resume versions",
+        "Applied jobs tracking (full)"
+      ],
+      "limits": {
+        "pdfGenerations": 75,
+        "coverLetters": 30,
+        "resumeUploads": 20,
+        "jobTracking": 200,
+        "templates": 3
+      }
+    },
+    {
+      "id": 3,
+      "name": "Career Accelerator",
+      "price": 39,
+      "billingCycle": "monthly",
+      "popular": false,
+      "features": [
+        "Everything in Tier 2",
+        "200 PDF generations / month",
+        "Portfolio Website",
+        "Full ATS breakdown (skills match, missing keywords)",
+        "Resume version comparison",
+        "Priority AI processing",
+        "Early access to new templates"
+      ],
+      "limits": {
+        "pdfGenerations": 200,
+        "coverLetters": 100,
+        "resumeUploads": 100,
+        "jobTracking": 1000,
+        "templates": 10
+      }
+    }
+  ]
+}
