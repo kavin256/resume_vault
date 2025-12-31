@@ -7,11 +7,19 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables from .env file (only if file exists, won't override existing env vars)
 load_dotenv()
 
 MONGODB_URI = os.getenv("MONGODB_URI")
 DATABASE_NAME = os.getenv("DATABASE_NAME")
+
+# Validate required environment variables
+if not MONGODB_URI:
+    raise ValueError("MONGODB_URI environment variable is required")
+if not DATABASE_NAME:
+    raise ValueError("DATABASE_NAME environment variable is required")
+
+print(f"Database config loaded: DATABASE_NAME='{DATABASE_NAME}'")
 
 # Global client instance
 mongo_client = None
@@ -23,11 +31,10 @@ async def connect_to_mongo():
     global mongo_client, database
 
     try:
-        # Create client with TLS/SSL options
+        # Create client with extended timeout for cloud deployment
         mongo_client = AsyncIOMotorClient(
             MONGODB_URI,
-            serverSelectionTimeoutMS=5000,
-            tlsAllowInvalidCertificates=True  # For development; use proper certs in production
+            serverSelectionTimeoutMS=30000,
         )
         database = mongo_client[DATABASE_NAME]
 
