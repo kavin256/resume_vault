@@ -3,7 +3,8 @@
  * Centralized API calls for Resume Vault frontend
  */
 
-const API_BASE_URL = "http://localhost:8000";
+// Use environment variable or fallback to production URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://resume-vault.fly.dev";
 
 /**
  * Sync user with backend after Clerk authentication
