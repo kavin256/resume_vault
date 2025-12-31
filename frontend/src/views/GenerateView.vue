@@ -134,7 +134,8 @@ async function handleGenerate() {
     }
 
     // Backend now fetches master profile from database using authenticated user
-    const response = await fetch('http://localhost:8000/generate', {
+    const API_URL = import.meta.env.VITE_API_URL || 'https://resume-vault.fly.dev'
+    const response = await fetch(`${API_URL}/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
