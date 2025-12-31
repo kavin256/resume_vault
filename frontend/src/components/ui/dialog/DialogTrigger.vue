@@ -1,6 +1,6 @@
 <script setup>
 import { DialogTrigger } from "reka-ui";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils.js";
 
 const props = defineProps({
   asChild: { type: Boolean, required: false },
