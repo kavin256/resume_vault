@@ -301,6 +301,26 @@ def root():
     }
 
 
+@app.get("/debug/my-ip")
+async def get_my_ip():
+    """Debug endpoint to check what IP this server uses for outbound connections"""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Try multiple IP detection services
+            ipv4_response = await client.get("https://api.ipify.org?format=json")
+            ipv6_response = await client.get("https://api64.ipify.org?format=json")
+
+            return {
+                "ipv4": ipv4_response.json() if ipv4_response.status_code == 200 else None,
+                "ipv6": ipv6_response.json() if ipv6_response.status_code == 200 else None,
+                "fly_region": os.getenv("FLY_REGION", "unknown"),
+                "fly_app_name": os.getenv("FLY_APP_NAME", "unknown")
+            }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.post("/generate", response_model=GenerateResponse)
 async def generate(
     request: GenerateRequest,
