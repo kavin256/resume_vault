@@ -172,7 +172,13 @@ async function handleRegenerate() {
     }
 
     const data = await response.json()
-    emit('regenerated', data)
+    // Emit with latex_content instead of html_content
+    emit('regenerated', {
+      latex_content: data.latex_content,
+      cover_letter_content: data.cover_letter_content,
+      version_number: data.version_number,
+      job_application_id: data.job_application_id
+    })
   } catch (err) {
     console.error('Failed to regenerate resume:', err)
     alert(err.message || 'Failed to regenerate resume. Please try again.')

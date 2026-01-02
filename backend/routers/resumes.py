@@ -1,21 +1,19 @@
 """
 Resume Generation Router
-Handles HTML resume generation, editing, version management, and PDF conversion
+Handles LaTeX resume generation, editing, version management, and PDF conversion
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 from auth import verify_clerk_token
 from database import get_database
 from services.ai_factory import AIProviderFactory
-from services.html_converter import HTMLToPDFConverter
-from services.content_extractor import ContentExtractor
+from services.latex_generator import LaTeXResumeGenerator
+from services.latex_local_compiler import LaTeXLocalCompiler
 import logging
 import uuid
-from io import BytesIO
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +21,7 @@ router = APIRouter(prefix="/resumes", tags=["resumes"])
 
 
 # Request/Response Models
-class GenerateHTMLResumeRequest(BaseModel):
+class GenerateLatexResumeRequest(BaseModel):
     job_description: str = Field(..., min_length=10)
     company_name: str = Field(..., min_length=1)
     position: str = Field(..., min_length=1)
@@ -31,11 +29,11 @@ class GenerateHTMLResumeRequest(BaseModel):
     posting_link: str = ""
 
 
-class GenerateHTMLResumeResponse(BaseModel):
+class GenerateLatexResumeResponse(BaseModel):
     job_application_id: str
     version_number: int
-    html_content: str
-    cover_letter_html: str
+    latex_content: str
+    cover_letter_content: str
     resume_ats_score: int
     cover_letter_ats_score: int
     tailored_data: Dict[str, Any]
@@ -48,8 +46,8 @@ class EditContentRequest(BaseModel):
 class RegenerateResponse(BaseModel):
     job_application_id: str
     version_number: int
-    html_content: str
-    cover_letter_html: str
+    latex_content: str
+    cover_letter_content: str
 
 
 class ResumeVersion(BaseModel):
@@ -63,8 +61,8 @@ class GetResumeResponse(BaseModel):
     job_application_id: str
     current_version: int
     versions: List[ResumeVersion]
-    html_content: str
-    cover_letter_html: str
+    latex_content: str
+    cover_letter_content: str
     job_info: Dict[str, str]
 
 
@@ -101,24 +99,24 @@ def calculate_cover_letter_ats_score(tailored_resume: Any, cover_letter: str) ->
     return min(total_score, 92)
 
 
-@router.post("/generate-html", response_model=GenerateHTMLResumeResponse)
-async def generate_html_resume(
-    request: GenerateHTMLResumeRequest,
+@router.post("/generate-latex", response_model=GenerateLatexResumeResponse)
+async def generate_latex_resume(
+    request: GenerateLatexResumeRequest,
     token_payload: dict = Depends(verify_clerk_token)
 ):
     """
-    Generate HTML resume (initial version).
+    Generate LaTeX resume (initial version).
 
     Process:
     1. Fetch user's master profile from database
     2. AI tailors content for the job
-    3. AI generates HTML with professional styling
+    3. Fill LaTeX template with tailored content
     4. Store in database with version history
-    5. Return HTML and metadata
+    5. Return LaTeX source and metadata
     """
     try:
         user_id = token_payload.get("sub")
-        logger.info(f"Generating HTML resume for user {user_id}, company: {request.company_name}")
+        logger.info(f"Generating LaTeX resume for user {user_id}, company: {request.company_name}")
 
         # Get database and AI provider
         db = get_database()
@@ -141,20 +139,13 @@ async def generate_html_resume(
         )
         logger.info("Resume tailoring completed")
 
-        # Generate HTML resume using AI
-        job_info = {
-            "company_name": request.company_name,
-            "position": request.position,
-            "job_id": request.job_id,
-            "posting_link": request.posting_link
-        }
-
-        html_content = await ai_provider.generate_html_resume(
-            master_profile=profile_dict,
-            tailored_resume=tailored_resume,
-            job_info=job_info
+        # Generate LaTeX resume using template
+        latex_generator = LaTeXResumeGenerator()
+        latex_content = latex_generator.generate_latex(
+            profile=profile_dict,
+            tailored_content=tailored_resume.dict()
         )
-        logger.info("HTML resume generation completed")
+        logger.info("LaTeX resume generation completed")
 
         # Generate cover letter (text)
         cover_letter_text = await ai_provider.generate_cover_letter(
@@ -165,32 +156,6 @@ async def generate_html_resume(
             tailored_resume=tailored_resume
         )
         logger.info("Cover letter generation completed")
-
-        # For now, wrap cover letter in simple HTML
-        # TODO: Create a proper HTML cover letter template
-        cover_letter_html = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Cover Letter - {request.company_name}</title>
-    <style>
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            max-width: 850px;
-            margin: 40px auto;
-            padding: 40px;
-            line-height: 1.6;
-            color: #2d3748;
-        }}
-        .cover-letter {{
-            white-space: pre-wrap;
-        }}
-    </style>
-</head>
-<body>
-    <div class="cover-letter">{cover_letter_text}</div>
-</body>
-</html>"""
 
         # Calculate ATS scores
         resume_ats_score = calculate_resume_ats_score(tailored_resume, profile_dict)
@@ -214,8 +179,8 @@ async def generate_html_resume(
                 {
                     "versionNumber": 1,
                     "createdAt": datetime.utcnow().isoformat(),
-                    "htmlContent": html_content,
-                    "coverLetterHtml": cover_letter_html,
+                    "latexContent": latex_content,
+                    "coverLetterContent": cover_letter_text,
                     "tailoredData": {
                         "tailored_summary": tailored_resume.tailored_summary,
                         "tailored_experience": [exp.dict() for exp in tailored_resume.tailored_experience],
@@ -237,11 +202,11 @@ async def generate_html_resume(
         await db["resume_generations"].insert_one(resume_generation_doc)
         logger.info(f"Stored resume generation with ID: {job_application_id}")
 
-        return GenerateHTMLResumeResponse(
+        return GenerateLatexResumeResponse(
             job_application_id=job_application_id,
             version_number=1,
-            html_content=html_content,
-            cover_letter_html=cover_letter_html,
+            latex_content=latex_content,
+            cover_letter_content=cover_letter_text,
             resume_ats_score=resume_ats_score,
             cover_letter_ats_score=cover_letter_ats_score,
             tailored_data=tailored_resume.dict()
@@ -305,8 +270,8 @@ async def get_resume(
             job_application_id=job_application_id,
             current_version=doc["currentVersion"],
             versions=versions_list,
-            html_content=version_data["htmlContent"],
-            cover_letter_html=version_data["coverLetterHtml"],
+            latex_content=version_data.get("latexContent", version_data.get("htmlContent", "")),
+            cover_letter_content=version_data.get("coverLetterContent", version_data.get("coverLetterHtml", "")),
             job_info=doc["jobInfo"]
         )
 
@@ -324,7 +289,7 @@ async def extract_editable_content(
     token_payload: dict = Depends(verify_clerk_token)
 ):
     """
-    Extract structured content from HTML for editing form.
+    Extract structured content from LaTeX/tailored data for editing form.
     Returns editable sections: summary, experiences, skills, education.
     """
     try:
@@ -351,9 +316,15 @@ async def extract_editable_content(
         if not version_data:
             raise HTTPException(status_code=404, detail=f"Version {version_to_get} not found")
 
-        # Extract content from HTML
-        extractor = ContentExtractor()
-        extracted_content = extractor.extract_editable_content(version_data["htmlContent"])
+        # Extract content from tailored data (already structured)
+        tailored_data = version_data.get("tailoredData", {})
+        
+        extracted_content = {
+            "summary": tailored_data.get("tailored_summary", ""),
+            "experiences": tailored_data.get("tailored_experience", []),
+            "keyword_matches": tailored_data.get("keyword_matches", []),
+            "recommendations": tailored_data.get("recommendations", [])
+        }
 
         logger.info(f"Extracted content from resume {job_application_id} version {version_to_get}")
         return extracted_content
@@ -372,13 +343,12 @@ async def regenerate_with_edits(
     token_payload: dict = Depends(verify_clerk_token)
 ):
     """
-    Regenerate HTML with edited content, preserving styling.
+    Regenerate LaTeX with edited content.
     Creates a new version in the versions array.
     """
     try:
         user_id = token_payload.get("sub")
         db = get_database()
-        ai_provider = AIProviderFactory.get_provider()
 
         # Fetch resume
         doc = await db["resume_generations"].find_one({
@@ -389,7 +359,7 @@ async def regenerate_with_edits(
         if not doc:
             raise HTTPException(status_code=404, detail="Resume not found")
 
-        # Get current version HTML
+        # Get current version
         current_version = doc["currentVersion"]
         current_version_data = None
         for v in doc["versions"]:
@@ -400,17 +370,31 @@ async def regenerate_with_edits(
         if not current_version_data:
             raise HTTPException(status_code=500, detail="Current version not found")
 
-        original_html = current_version_data["htmlContent"]
-        job_info = doc["jobInfo"]
+        # Get master profile for regeneration
+        profile = await db["master_profiles"].find_one({"userId": user_id})
+        if not profile:
+            raise HTTPException(status_code=404, detail="Master profile not found")
+        
+        profile_dict = {k: str(v) if k == "_id" else v for k, v in profile.items()}
 
-        # Regenerate HTML with AI
-        logger.info(f"Regenerating HTML for {job_application_id} with edited content")
-        new_html = await ai_provider.regenerate_html_with_edits(
-            original_html=original_html,
-            edited_content=request.edited_content,
-            job_info=job_info
+        # Merge edited content with existing tailored data
+        tailored_data = current_version_data.get("tailoredData", {})
+        edited_content = request.edited_content
+        
+        # Update tailored data with edits
+        if "summary" in edited_content:
+            tailored_data["tailored_summary"] = edited_content["summary"]
+        if "experiences" in edited_content:
+            tailored_data["tailored_experience"] = edited_content["experiences"]
+
+        # Regenerate LaTeX with updated content
+        logger.info(f"Regenerating LaTeX for {job_application_id} with edited content")
+        latex_generator = LaTeXResumeGenerator()
+        new_latex = latex_generator.generate_latex(
+            profile=profile_dict,
+            tailored_content=tailored_data
         )
-        logger.info("HTML regeneration completed")
+        logger.info("LaTeX regeneration completed")
 
         # Create new version
         new_version_number = len(doc["versions"]) + 1
@@ -418,9 +402,9 @@ async def regenerate_with_edits(
         new_version = {
             "versionNumber": new_version_number,
             "createdAt": datetime.utcnow().isoformat(),
-            "htmlContent": new_html,
-            "coverLetterHtml": current_version_data["coverLetterHtml"],  # Keep same cover letter
-            "tailoredData": current_version_data["tailoredData"],  # Keep same tailored data
+            "latexContent": new_latex,
+            "coverLetterContent": current_version_data.get("coverLetterContent", current_version_data.get("coverLetterHtml", "")),
+            "tailoredData": tailored_data,
             "atsScores": current_version_data["atsScores"],  # Keep same scores for now
             "isEdited": True
         }
@@ -442,8 +426,8 @@ async def regenerate_with_edits(
         return RegenerateResponse(
             job_application_id=job_application_id,
             version_number=new_version_number,
-            html_content=new_html,
-            cover_letter_html=current_version_data["coverLetterHtml"]
+            latex_content=new_latex,
+            cover_letter_content=current_version_data.get("coverLetterContent", current_version_data.get("coverLetterHtml", ""))
         )
 
     except HTTPException:
@@ -460,7 +444,7 @@ async def download_resume_pdf(
     token_payload: dict = Depends(verify_clerk_token)
 ):
     """
-    Convert HTML resume to PDF and return for download.
+    Convert LaTeX resume to PDF and return for download.
     """
     try:
         user_id = token_payload.get("sub")
@@ -486,9 +470,15 @@ async def download_resume_pdf(
         if not version_data:
             raise HTTPException(status_code=404, detail=f"Version {version_to_get} not found")
 
-        # Convert HTML to PDF
-        converter = HTMLToPDFConverter()
-        pdf_bytes = converter.convert(version_data["htmlContent"])
+        # Get LaTeX content (support both old and new field names)
+        latex_content = version_data.get("latexContent", version_data.get("htmlContent", ""))
+        
+        if not latex_content:
+            raise HTTPException(status_code=500, detail="No LaTeX content found")
+
+        # Compile LaTeX to PDF using local pdflatex
+        compiler = LaTeXLocalCompiler()
+        pdf_bytes = await compiler.compile_to_pdf(latex_content)
 
         logger.info(f"Converted resume {job_application_id} v{version_to_get} to PDF")
 

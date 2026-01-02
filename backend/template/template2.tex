@@ -1,0 +1,153 @@
+\documentclass[11pt, letterpaper]{article}
+
+% =========================
+% Packages & Configuration
+% =========================
+
+\usepackage[
+    ignoreheadfoot,
+    top=1.5 cm,
+    bottom=2 cm,
+    left=1.5 cm,
+    right=1.5 cm,
+    footskip=1.0 cm
+]{geometry}
+
+\usepackage{titlesec}
+\usepackage{tabularx}
+\usepackage{ragged2e}
+\usepackage{array}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{enumitem}
+\usepackage{fontawesome5}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage[pscoord]{eso-pic}
+\usepackage{calc}
+\usepackage{bookmark}
+\usepackage{lastpage}
+\usepackage{changepage}
+\usepackage{paracol}
+\usepackage{ifthen}
+\usepackage{needspace}
+\usepackage{iftex}
+
+\definecolor{primaryColor}{RGB}{0, 0, 0}
+
+\ifPDFTeX
+    \input{glyphtounicode}
+    \pdfgentounicode=1
+    \usepackage[T1]{fontenc}
+    \usepackage[utf8]{inputenc}
+    \usepackage{lmodern}
+\fi
+
+\usepackage{charter}
+
+% =========================
+% Global Formatting
+% =========================
+
+\raggedright
+\pagestyle{empty}
+\setcounter{secnumdepth}{0}
+\setlength{\parindent}{0pt}
+\setlength{\columnsep}{0.15cm}
+\pagenumbering{gobble}
+
+\titleformat{\section}{\needspace{4\baselineskip}\bfseries\Large}{}{0pt}{}[\titlerule]
+\titlespacing{\section}{-1pt}{0.3 cm}{0.2 cm}
+
+\renewcommand\labelitemi{$\vcenter{\hbox{\small$\bullet$}}$}
+
+% =========================
+% Custom Environments
+% =========================
+
+\newenvironment{highlights}{
+    \begin{itemize}[
+        topsep=0.10 cm,
+        parsep=0.10 cm,
+        itemsep=0pt,
+        leftmargin=10pt
+    ]
+}{
+    \end{itemize}
+}
+
+\newenvironment{onecolentry}{
+    \begin{adjustwidth}{0cm}{0cm}
+}{
+    \end{adjustwidth}
+}
+
+\newenvironment{twocolentry}[1]{
+    \onecolentry
+    \setcolumnwidth{\fill, 4.5cm}
+    \begin{paracol}{2}
+}{
+    \switchcolumn \raggedleft #1
+    \end{paracol}
+    \endonecolentry
+}
+
+\newenvironment{header}{
+    \centering\linespread{1.2}
+}{
+    \par
+}
+
+% =========================
+% Document
+% =========================
+
+\begin{document}
+
+% ========= HEADER =========
+
+\begin{header}
+    {\fontsize{25pt}{25pt}\selectfont \textbf{{{FULL_NAME}}}}
+
+    \vspace{5pt}
+
+    \normalsize
+    {{LOCATION}} \quad | \quad {{EMAIL}} \quad | \quad {{PHONE}} \quad | \quad {{LINKEDIN}} \quad | \quad {{PORTFOLIO}}
+\end{header}
+
+\vspace{0.3cm}
+
+% ========= OBJECTIVE =========
+
+\section{Objective}
+
+\begin{onecolentry}
+{{PROFESSIONAL_SUMMARY}}
+\end{onecolentry}
+
+% ========= TECHNOLOGIES =========
+
+\section{Technologies}
+
+\begin{onecolentry}
+{{SKILLS}}
+\end{onecolentry}
+
+% ========= EXPERIENCE =========
+
+\section{Professional Experience}
+
+{{EXPERIENCES}}
+
+% ========= EDUCATION =========
+
+\section{Education}
+
+{{EDUCATION}}
+
+% ========= CERTIFICATIONS =========
+
+\section{Certifications}
+
+{{CERTIFICATIONS}}
+
+\end{document}

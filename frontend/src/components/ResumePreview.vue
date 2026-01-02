@@ -1,7 +1,7 @@
 <template>
   <div class="resume-preview-container">
     <div class="preview-header">
-      <h3 class="preview-title">Resume Preview</h3>
+      <h3 class="preview-title">Resume Preview (LaTeX)</h3>
       <div class="preview-actions">
         <Button @click="handleEdit" variant="outline" size="default">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -20,7 +20,7 @@
     </div>
 
     <div class="preview-info">
-      <p class="preview-description">Review your tailored resume below. You can edit the content or download it as PDF.</p>
+      <p class="preview-description">Review your LaTeX source below. Click "Download PDF" to compile and download the formatted resume.</p>
       <div class="ats-scores-mini">
         <span class="score-badge" :class="getScoreClass(atsScore)">
           ATS Score: {{ atsScore }}%
@@ -28,15 +28,24 @@
       </div>
     </div>
 
-    <!-- HTML Preview in iframe -->
+    <!-- LaTeX Source Code Display -->
     <div class="preview-frame-container">
-      <iframe
-        ref="previewIframe"
-        :srcdoc="htmlContent"
-        sandbox="allow-same-origin allow-scripts"
-        class="preview-iframe"
-        title="Resume Preview"
-      />
+      <div class="latex-source-container">
+        <div class="source-header">
+          <span class="source-label">LaTeX Source Code</span>
+          <button @click="copyToClipboard" class="copy-button" :class="{ 'copied': isCopied }">
+            <svg v-if="!isCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+            </svg>
+            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            {{ isCopied ? 'Copied!' : 'Copy' }}
+          </button>
+        </div>
+        <pre class="latex-source"><code>{{ latexContent }}</code></pre>
+      </div>
     </div>
   </div>
 </template>
@@ -47,7 +56,7 @@ import { useAuth } from '@clerk/vue'
 import { Button } from '@/components/ui/button'
 
 const props = defineProps({
-  htmlContent: {
+  latexContent: {
     type: String,
     required: true
   },
@@ -64,8 +73,8 @@ const props = defineProps({
 const emit = defineEmits(['edit', 'downloaded'])
 
 const auth = useAuth()
-const previewIframe = ref(null)
 const isDownloading = ref(false)
+const isCopied = ref(false)
 
 function handleEdit() {
   emit('edit')
@@ -115,6 +124,18 @@ function getScoreClass(score) {
   if (score >= 75) return 'score-good'
   if (score >= 65) return 'score-fair'
   return 'score-poor'
+}
+
+async function copyToClipboard() {
+  try {
+    await navigator.clipboard.writeText(props.latexContent)
+    isCopied.value = true
+    setTimeout(() => {
+      isCopied.value = false
+    }, 2000)
+  } catch (error) {
+    console.error('Failed to copy:', error)
+  }
 }
 </script>
 
@@ -211,12 +232,90 @@ function getScoreClass(score) {
   margin: 0 auto;
 }
 
-.preview-iframe {
-  width: 100%;
-  height: 1100px;
-  border: none;
-  display: block;
-  background: white;
+.latex-source-container {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.source-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: #2d2d2d;
+  border-bottom: 1px solid #3e3e3e;
+}
+
+.source-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #9cdcfe;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.copy-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #3e3e3e;
+  border: 1px solid #4e4e4e;
+  border-radius: 4px;
+  color: #d4d4d4;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-button:hover {
+  background: #4e4e4e;
+  border-color: #5e5e5e;
+}
+
+.copy-button.copied {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: white;
+}
+
+.latex-source {
+  margin: 0;
+  padding: 20px;
+  overflow-x: auto;
+  max-height: 800px;
+  overflow-y: auto;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+
+.latex-source code {
+  font-family: inherit;
+  color: inherit;
+}
+
+/* Scrollbar styling for dark theme */
+.latex-source::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.latex-source::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.latex-source::-webkit-scrollbar-thumb {
+  background: #4e4e4e;
+  border-radius: 5px;
+}
+
+.latex-source::-webkit-scrollbar-thumb:hover {
+  background: #5e5e5e;
 }
 
 /* Responsive */
@@ -234,8 +333,10 @@ function getScoreClass(score) {
     flex: 1;
   }
 
-  .preview-iframe {
-    height: 800px;
+  .latex-source {
+    font-size: 11px;
+    padding: 12px;
+    max-height: 600px;
   }
 }
 </style>

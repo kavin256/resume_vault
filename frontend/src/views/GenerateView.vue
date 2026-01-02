@@ -62,7 +62,7 @@
     <!-- Show preview when generated and not editing -->
     <ResumePreview
       v-if="generated && !isEditing"
-      :html-content="htmlContent"
+      :latex-content="latexContent"
       :job-application-id="jobApplicationId"
       :ats-score="resumeAtsScore"
       @edit="handleEdit"
@@ -95,8 +95,8 @@ const postingLink = ref('')
 const isGenerating = ref(false)
 const generated = ref(false)
 const isEditing = ref(false)
-const htmlContent = ref('')
-const coverLetterHtml = ref('')
+const latexContent = ref('')
+const coverLetterContent = ref('')
 const jobApplicationId = ref('')
 const resumeAtsScore = ref(0)
 const coverLetterAtsScore = ref(0)
@@ -115,9 +115,9 @@ async function handleGenerate() {
       throw new Error('No authentication token. Please sign in.')
     }
 
-    // Call new HTML generation endpoint
+    // Call LaTeX generation endpoint
     const API_URL = import.meta.env.VITE_API_URL || 'https://resume-vault.fly.dev'
-    const response = await fetch(`${API_URL}/resumes/generate-html`, {
+    const response = await fetch(`${API_URL}/resumes/generate-latex`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -138,8 +138,8 @@ async function handleGenerate() {
     }
 
     const data = await response.json()
-    htmlContent.value = data.html_content
-    coverLetterHtml.value = data.cover_letter_html
+    latexContent.value = data.latex_content
+    coverLetterContent.value = data.cover_letter_content
     jobApplicationId.value = data.job_application_id
     resumeAtsScore.value = data.resume_ats_score
     coverLetterAtsScore.value = data.cover_letter_ats_score
@@ -162,8 +162,8 @@ function handleCancelEdit() {
 
 function handleRegenerated(data) {
   // Update with regenerated content
-  htmlContent.value = data.html_content
-  coverLetterHtml.value = data.cover_letter_html
+  latexContent.value = data.latex_content
+  coverLetterContent.value = data.cover_letter_content
   isEditing.value = false
 }
 

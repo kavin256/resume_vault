@@ -400,8 +400,8 @@ async def generate(
         # Generate professional PDFs
         pdf_gen = ProfessionalPDFGenerator()
 
-        # Generate resume PDF with tailored content
-        resume_pdf = pdf_gen.generate_resume(
+        # Generate resume PDF with tailored content (using LaTeX)
+        resume_pdf = await pdf_gen.generate_resume(
             profile=profile_dict,
             tailored_content=tailored_resume.dict(),
             job_info={
