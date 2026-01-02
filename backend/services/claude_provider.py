@@ -29,8 +29,19 @@ class ClaudeProvider(BaseAIProvider):
         """
         super().__init__(api_key, model or self.DEFAULT_MODEL)
         timeout = float(os.getenv("AI_TIMEOUT", "60"))
-        self.client = httpx.AsyncClient(timeout=timeout)
+        
+        # Create client with SSL verification disabled if needed (for development)
+        # In production, you should fix SSL certificate issues properly
+        verify_ssl = os.getenv("VERIFY_SSL", "true").lower() != "false"
+        
+        self.client = httpx.AsyncClient(
+            timeout=timeout,
+            verify=verify_ssl
+        )
         self.max_tokens = int(os.getenv("AI_MAX_TOKENS", "4096"))
+        
+        if not verify_ssl:
+            logger.warning("SSL verification is disabled - this should only be used in development!")
 
     async def tailor_resume(
         self,
@@ -194,6 +205,15 @@ TASK:
 4. STRATEGIC RECOMMENDATIONS:
    Provide 2-3 specific, actionable suggestions to strengthen this application based on gaps or opportunities you've identified.
 
+CRITICAL TEXT FORMATTING RULES:
+- AVOID these LaTeX special characters in your output: ampersand, percent, dollar, hash, underscore, braces, tilde, caret, backslash
+- Use "and" instead of ampersand symbol
+- Use "percent" or write out percentages as "50 percent" instead of using percent symbol
+- Use regular quotes instead of special quote characters
+- Use plain hyphens for ranges (2020-2023) not em-dashes
+- Do NOT use any markup, markdown, or special formatting
+- Write in plain text only
+
 CRITICAL: Return ONLY valid JSON matching this exact structure (no markdown, no code blocks, just pure JSON):
 {{
     "tailored_summary": "The rewritten professional summary optimized for this role",
@@ -251,6 +271,15 @@ CRITICAL FORMATTING REQUIREMENTS:
 - End with "Sincerely," followed by the candidate's ACTUAL name: {first_name} {last_name}
 - DO NOT use placeholders like "[Your Name]" - use the real name provided above
 - DO NOT include any brackets, placeholders, or generic text
+
+CRITICAL TEXT FORMATTING RULES:
+- AVOID these LaTeX special characters: ampersand, percent, dollar, hash, underscore, braces, tilde, caret, backslash
+- Use "and" instead of ampersand symbol
+- Use "percent" or write out percentages as "50 percent" instead of using percent symbol
+- Use regular quotes instead of special quote characters
+- Use plain hyphens for ranges (2020-2023) not em-dashes
+- Do NOT use any markup, markdown, or special formatting
+- Write in plain text only
 
 Return ONLY the cover letter text, no JSON, no additional commentary."""
 
@@ -324,8 +353,14 @@ Return ONLY the cover letter text, no JSON, no additional commentary."""
                 json_end = content.find('```', json_start)
                 content = content[json_start:json_end].strip()
 
-            # Parse JSON
-            data = json.loads(content)
+            # Clean control characters from JSON string
+            # Replace problematic control characters while preserving valid JSON structure
+            import re
+            # Remove or replace invalid control characters (except \n, \r, \t which are valid when escaped)
+            content = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', content)
+            
+            # Parse JSON with strict=False to be more lenient
+            data = json.loads(content, strict=False)
 
             # Convert to TailoredResume model
             tailored_exp = [

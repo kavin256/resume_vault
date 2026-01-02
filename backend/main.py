@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 
 # Import database and router modules
 from database import connect_to_mongo, close_mongo_connection, get_database
-from routers import users, profiles
+from routers import users, profiles, resumes
 from routers.profiles import MasterProfile  # Use comprehensive MasterProfile model
 from auth import verify_clerk_token  # Import authentication
 
@@ -39,6 +39,8 @@ async def lifespan(app: FastAPI):
     await db["users"].create_index("clerk_user_id", unique=True)
     await db["users"].create_index("email")  # For orphaned account lookups
     await db["master_profiles"].create_index("userId", unique=True)  # Master profile index
+    await db["resume_generations"].create_index("userId")  # Resume generations by user
+    await db["resume_generations"].create_index("jobApplicationId", unique=True)  # Unique job application ID
     print("✓ MongoDB indexes created")
 
     # Validate AI provider
@@ -73,6 +75,7 @@ app.add_middleware(
 # Include routers
 app.include_router(users.router)
 app.include_router(profiles.router)
+app.include_router(resumes.router)
 
 
 # Simple MasterProfile for backwards compatibility with existing frontend
@@ -301,6 +304,26 @@ def root():
     }
 
 
+@app.get("/debug/my-ip")
+async def get_my_ip():
+    """Debug endpoint to check what IP this server uses for outbound connections"""
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Try multiple IP detection services
+            ipv4_response = await client.get("https://api.ipify.org?format=json")
+            ipv6_response = await client.get("https://api64.ipify.org?format=json")
+
+            return {
+                "ipv4": ipv4_response.json() if ipv4_response.status_code == 200 else None,
+                "ipv6": ipv6_response.json() if ipv6_response.status_code == 200 else None,
+                "fly_region": os.getenv("FLY_REGION", "unknown"),
+                "fly_app_name": os.getenv("FLY_APP_NAME", "unknown")
+            }
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.post("/generate", response_model=GenerateResponse)
 async def generate(
     request: GenerateRequest,
@@ -377,8 +400,8 @@ async def generate(
         # Generate professional PDFs
         pdf_gen = ProfessionalPDFGenerator()
 
-        # Generate resume PDF with tailored content
-        resume_pdf = pdf_gen.generate_resume(
+        # Generate resume PDF with tailored content (using LaTeX)
+        resume_pdf = await pdf_gen.generate_resume(
             profile=profile_dict,
             tailored_content=tailored_resume.dict(),
             job_info={

@@ -59,46 +59,23 @@
       <strong>Error:</strong> {{ error }}
     </div>
 
-    <div v-if="generated" class="download-card">
-      <div class="download-header">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 11l3 3L22 4"></path>
-          <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
-        </svg>
-        <h3>Documents Ready</h3>
-      </div>
-      <p class="download-description">Your resume and cover letter have been generated successfully.</p>
+    <!-- Show preview when generated and not editing -->
+    <ResumePreview
+      v-if="generated && !isEditing"
+      :latex-content="latexContent"
+      :job-application-id="jobApplicationId"
+      :ats-score="resumeAtsScore"
+      @edit="handleEdit"
+      @downloaded="handleDownloaded"
+    />
 
-      <div class="ats-scores">
-        <div class="ats-score-item">
-          <div class="ats-score-label">Resume ATS Score</div>
-          <div class="ats-score-value" :class="getScoreClass(resumeAtsScore)">
-            {{ resumeAtsScore }}%
-          </div>
-        </div>
-        <div class="ats-score-item">
-          <div class="ats-score-label">Cover Letter ATS Score</div>
-          <div class="ats-score-value" :class="getScoreClass(coverLetterAtsScore)">
-            {{ coverLetterAtsScore }}%
-          </div>
-        </div>
-      </div>
-
-      <div class="download-buttons">
-        <Button @click="downloadResume" variant="secondary" class="flex-1 button-with-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
-          </svg>
-          Download Resume
-        </Button>
-        <Button @click="downloadCoverLetter" variant="secondary" class="flex-1 button-with-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
-          </svg>
-          Download Cover Letter
-        </Button>
-      </div>
-    </div>
+    <!-- Show edit form when editing -->
+    <ResumeEditForm
+      v-if="isEditing"
+      :job-application-id="jobApplicationId"
+      @regenerated="handleRegenerated"
+      @cancel="handleCancelEdit"
+    />
   </div>
 </template>
 
@@ -106,6 +83,8 @@
 import { ref } from 'vue'
 import { useAuth } from '@clerk/vue'
 import { Button } from '@/components/ui/button'
+import ResumePreview from '@/components/ResumePreview.vue'
+import ResumeEditForm from '@/components/ResumeEditForm.vue'
 
 const auth = useAuth()
 const jobDescription = ref('')
@@ -115,8 +94,10 @@ const jobId = ref('')
 const postingLink = ref('')
 const isGenerating = ref(false)
 const generated = ref(false)
-const resumeBase64 = ref('')
-const coverLetterBase64 = ref('')
+const isEditing = ref(false)
+const latexContent = ref('')
+const coverLetterContent = ref('')
+const jobApplicationId = ref('')
 const resumeAtsScore = ref(0)
 const coverLetterAtsScore = ref(0)
 const error = ref('')
@@ -125,6 +106,7 @@ async function handleGenerate() {
   error.value = ''
   isGenerating.value = true
   generated.value = false
+  isEditing.value = false
 
   try {
     // Get authentication token
@@ -133,9 +115,9 @@ async function handleGenerate() {
       throw new Error('No authentication token. Please sign in.')
     }
 
-    // Backend now fetches master profile from database using authenticated user
+    // Call LaTeX generation endpoint
     const API_URL = import.meta.env.VITE_API_URL || 'https://resume-vault.fly.dev'
-    const response = await fetch(`${API_URL}/generate`, {
+    const response = await fetch(`${API_URL}/resumes/generate-latex`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -156,8 +138,9 @@ async function handleGenerate() {
     }
 
     const data = await response.json()
-    resumeBase64.value = data.resume_base64
-    coverLetterBase64.value = data.cover_letter_base64
+    latexContent.value = data.latex_content
+    coverLetterContent.value = data.cover_letter_content
+    jobApplicationId.value = data.job_application_id
     resumeAtsScore.value = data.resume_ats_score
     coverLetterAtsScore.value = data.cover_letter_ats_score
     generated.value = true
@@ -167,6 +150,26 @@ async function handleGenerate() {
   } finally {
     isGenerating.value = false
   }
+}
+
+function handleEdit() {
+  isEditing.value = true
+}
+
+function handleCancelEdit() {
+  isEditing.value = false
+}
+
+function handleRegenerated(data) {
+  // Update with regenerated content
+  latexContent.value = data.latex_content
+  coverLetterContent.value = data.cover_letter_content
+  isEditing.value = false
+}
+
+function handleDownloaded() {
+  // Optional: track download event
+  console.log('Resume downloaded')
 }
 
 // TODO: Remove this test function before production
@@ -230,30 +233,6 @@ function getScoreClass(score) {
   if (score >= 70) return 'score-good'
   if (score >= 60) return 'score-fair'
   return 'score-poor'
-}
-
-function downloadResume() {
-  downloadFile(resumeBase64.value, 'resume.pdf', 'application/pdf')
-}
-
-function downloadCoverLetter() {
-  downloadFile(coverLetterBase64.value, 'cover_letter.pdf', 'application/pdf')
-}
-
-function downloadFile(base64Data, filename, mimeType) {
-  const binaryString = atob(base64Data)
-  const bytes = new Uint8Array(binaryString.length)
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i)
-  }
-
-  const blob = new Blob([bytes], { type: mimeType })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  link.click()
-  URL.revokeObjectURL(url)
 }
 </script>
 

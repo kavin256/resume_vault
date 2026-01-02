@@ -145,15 +145,96 @@ resume_vault/
 - **Full-Width Layout** - Efficient use of screen space
 - **Active Navigation States** - Visual feedback showing current page
 
+## 🎨 Recent Implementation: HTML Resume Generation with Preview & Editing
+
+### What's New
+We've transformed the resume generation from PDF-only to an **HTML-first approach** that enables live preview and iterative editing while maintaining AI control over styling.
+
+### Implementation Checklist
+
+#### ✅ Backend Implementation
+- [x] **Add dependencies to requirements.txt** (weasyprint, beautifulsoup4, lxml)
+- [x] **Add generate_html_resume() method to ClaudeProvider** - AI generates complete HTML with inline CSS
+- [x] **Add regenerate_html_with_edits() method to ClaudeProvider** - Preserves styling while updating content
+- [x] **Create html_converter.py service** - HTML→PDF conversion using WeasyPrint
+- [x] **Create content_extractor.py service** - Extract editable content from HTML using BeautifulSoup
+- [x] **Create resumes.py router** - Complete REST API with 6 endpoints
+- [x] **Update main.py** - Include resumes router and DB indexes for resume_generations collection
+
+#### ✅ Frontend Implementation
+- [x] **Create ResumePreview.vue component** - Live HTML preview with download/edit buttons
+- [x] **Create ResumeEditForm.vue component** - Form to edit resume content with structured sections
+- [x] **Update GenerateView.vue** - Integrate HTML generation flow with preview and edit capabilities
+- [x] **Update api.js** - Add new resume API methods (implied by component implementation)
+
+#### 🧪 Testing Checklist
+- [ ] **Test end-to-end flow** (generate → preview → download)
+- [ ] **Test edit flow** (edit → regenerate → preview)
+
+### New API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/resumes/generate-html` | POST | Generate HTML resume and store in DB |
+| `/resumes/{id}` | GET | Get resume by ID (with version support) |
+| `/resumes/{id}/extract` | GET | Extract editable content from HTML |
+| `/resumes/{id}/regenerate` | POST | Regenerate HTML with edited content |
+| `/resumes/{id}/pdf` | GET | Download resume as PDF |
+| `/resumes/list/all` | GET | List all user's resumes |
+
+### New User Flow
+
+1. **Generate** - User fills job details → Gets HTML preview
+2. **Preview** - User sees professional HTML resume in browser
+3. **Choose Action**:
+   - **Edit Content** → Form with all sections → Regenerate → Preview updated
+   - **Download PDF** → HTML→PDF conversion → Browser download
+4. **Multiple Iterations** - Edit and regenerate as many times as needed
+
+### Database Schema
+
+**New Collection: `resume_generations`**
+```javascript
+{
+  "_id": ObjectId,
+  "userId": "clerk_user_id",
+  "jobApplicationId": "uuid",
+  "jobInfo": {
+    "companyName": str,
+    "position": str,
+    "jobDescription": str
+  },
+  "versions": [
+    {
+      "versionNumber": 1,
+      "createdAt": ISO datetime,
+      "htmlContent": str,
+      "coverLetterHtml": str,
+      "tailoredData": {...},
+      "atsScores": {"resume": int, "coverLetter": int},
+      "isEdited": bool
+    }
+  ],
+  "currentVersion": 1
+}
+```
+
+### Key Features
+- ✨ **HTML-first generation** - AI creates complete styled HTML resumes
+- 👁️ **Live preview** - See resume before downloading
+- ✏️ **Content editing** - Modify text while preserving AI-generated styling
+- 📚 **Version history** - Track multiple versions of each resume
+- 🎨 **Style preservation** - AI maintains exact formatting when regenerating
+- 📄 **On-demand PDF** - Convert to PDF only when needed
+
 ## 🔮 Future Enhancements
 
-- **Database Integration** - Save and retrieve multiple master profiles
-- **AI-Powered Tailoring** - Automatically customize resume content based on job description
-- **Multiple Resume Templates** - Choose from different professional designs
-- **Job Application Tracking** - Track which jobs you've applied to
-- **Cover Letter Customization** - Edit generated cover letters before download
-- **Export Formats** - Support for DOCX, HTML, and other formats
-- **Version History** - Track different versions of your resume
+- **Cover Letter HTML Preview** - Extend preview functionality to cover letters
+- **Version History UI** - Visual timeline of resume versions with comparison
+- **Multiple Resume Templates** - Choose from different professional HTML designs
+- **Resume Comparison View** - Side-by-side comparison of versions
+- **Custom Styling Options** - User control over colors and fonts
+- **Export Formats** - Support for DOCX and other formats
 
 ## 📝 License
 

@@ -1,28 +1,35 @@
 """
 Professional PDF Generation Service
-Creates polished, ATS-friendly resume and cover letter PDFs
+Creates polished, ATS-friendly resume and cover letter PDFs using LaTeX templates
 """
 
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 from io import BytesIO
-from typing import Dict, Any, List
+from typing import Dict, Any
 import logging
+
+from services.latex_generator import LaTeXResumeGenerator
+from services.latex_online_compiler import LaTeXOnlineCompiler
 
 logger = logging.getLogger(__name__)
 
 
 class ProfessionalPDFGenerator:
-    """Generate professional-looking resume and cover letter PDFs"""
+    """Generate professional-looking resume and cover letter PDFs using LaTeX"""
 
     def __init__(self):
-        """Initialize PDF generator with custom styles"""
+        """Initialize PDF generator with LaTeX components"""
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
+        
+        # Initialize LaTeX generator and compiler
+        self.latex_generator = LaTeXResumeGenerator()
+        self.latex_compiler = LaTeXOnlineCompiler()
 
     def _setup_custom_styles(self):
         """Create custom paragraph styles for resume sections"""
@@ -115,14 +122,14 @@ class ProfessionalPDFGenerator:
             leading=13
         ))
 
-    def generate_resume(
+    async def generate_resume(
         self,
         profile: Dict[str, Any],
         tailored_content: Dict[str, Any],
         job_info: Dict[str, str]
     ) -> bytes:
         """
-        Generate professional resume PDF.
+        Generate professional resume PDF using LaTeX template.
 
         Args:
             profile: Master profile dictionary
@@ -132,49 +139,26 @@ class ProfessionalPDFGenerator:
         Returns:
             PDF bytes
         """
-        logger.info("Generating professional resume PDF")
+        logger.info("Generating professional resume PDF using LaTeX")
 
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=letter,
-            rightMargin=0.75 * inch,
-            leftMargin=0.75 * inch,
-            topMargin=0.6 * inch,
-            bottomMargin=0.6 * inch
-        )
-
-        story = []
-
-        # Header with name and contact info
-        story.extend(self._build_header(profile))
-
-        # Professional summary (tailored)
-        story.extend(self._build_summary_section(tailored_content.get('tailored_summary', '')))
-
-        # Work experience (tailored)
-        story.extend(self._build_experience_section(
-            tailored_content.get('tailored_experience', []),
-            profile.get('workExperience', [])
-        ))
-
-        # Skills section
-        story.extend(self._build_skills_section(profile.get('skills', [])))
-
-        # Education
-        story.extend(self._build_education_section(profile.get('education', [])))
-
-        # Certifications (if any)
-        certifications = profile.get('certifications', [])
-        if certifications:
-            story.extend(self._build_certifications_section(certifications))
-
-        # Build PDF
-        doc.build(story)
-        buffer.seek(0)
-
-        logger.info("Resume PDF generated successfully")
-        return buffer.read()
+        try:
+            # Generate LaTeX source from template
+            latex_source = self.latex_generator.generate_latex(
+                profile=profile,
+                tailored_content=tailored_content
+            )
+            
+            logger.info("LaTeX source generated, compiling to PDF...")
+            
+            # Compile LaTeX to PDF using online compiler
+            pdf_bytes = await self.latex_compiler.compile_to_pdf(latex_source)
+            
+            logger.info(f"Resume PDF generated successfully ({len(pdf_bytes)} bytes)")
+            return pdf_bytes
+            
+        except Exception as e:
+            logger.error(f"Failed to generate LaTeX-based resume PDF: {e}", exc_info=True)
+            raise Exception(f"LaTeX PDF generation failed: {str(e)}")
 
     def generate_cover_letter(
         self,
@@ -256,250 +240,3 @@ class ProfessionalPDFGenerator:
         logger.info("Cover letter PDF generated successfully")
         return buffer.read()
 
-    def _build_header(self, profile: Dict) -> List:
-        """Build resume header with contact information"""
-        elements = []
-        personal_info = profile.get('personalInfo', {})
-
-        # Name
-        first_name = personal_info.get('firstName', '')
-        last_name = personal_info.get('lastName', '')
-        name = f"{first_name} {last_name}".strip()
-
-        if name:
-            elements.append(Paragraph(name, self.styles['ResumeName']))
-
-        # Contact info
-        contact_parts = []
-        email = personal_info.get('email', '')
-        phone = personal_info.get('phone', '')
-        location = personal_info.get('location', {})
-        linkedin = personal_info.get('linkedinUrl', '')
-        portfolio = personal_info.get('portfolioUrl', '')
-
-        if email:
-            contact_parts.append(email)
-        if phone:
-            contact_parts.append(phone)
-
-        city = location.get('city', '')
-        country = location.get('country', '')
-        if city and country:
-            contact_parts.append(f"{city}, {country}")
-        elif city:
-            contact_parts.append(city)
-
-        if linkedin:
-            contact_parts.append(f"LinkedIn: {linkedin}")
-        if portfolio:
-            contact_parts.append(f"Portfolio: {portfolio}")
-
-        if contact_parts:
-            contact_text = " | ".join(contact_parts)
-            elements.append(Paragraph(contact_text, self.styles['ContactInfo']))
-
-        elements.append(Spacer(1, 0.1 * inch))
-
-        return elements
-
-    def _build_summary_section(self, summary: str) -> List:
-        """Build professional summary section"""
-        elements = []
-
-        if summary:
-            elements.append(Paragraph("PROFESSIONAL SUMMARY", self.styles['SectionHeader']))
-            elements.append(Paragraph(summary, self.styles['ResumeBodyText']))
-            elements.append(Spacer(1, 0.05 * inch))
-
-        return elements
-
-    def _build_experience_section(
-        self,
-        tailored_experiences: List[Dict],
-        original_experiences: List[Dict]
-    ) -> List:
-        """Build work experience section with tailored bullets"""
-        elements = []
-
-        # Use tailored experiences if available, otherwise use original
-        experiences_to_show = tailored_experiences if tailored_experiences else original_experiences
-
-        if not experiences_to_show:
-            return elements
-
-        elements.append(Paragraph("PROFESSIONAL EXPERIENCE", self.styles['SectionHeader']))
-
-        # Display each tailored experience
-        for exp in experiences_to_show:
-            job_title = exp.get('jobTitle', 'Position')
-            company_name = exp.get('companyName', 'Company')
-
-            # Match with original experience to get dates and location
-            original_exp = None
-            if tailored_experiences:
-                # Find matching original experience by job title and company
-                logger.info(f"Looking for match: '{job_title}' at '{company_name}'")
-                for orig in original_experiences:
-                    orig_title = orig.get('jobTitle', '').strip()
-                    orig_company = orig.get('companyName', '').strip()
-                    logger.info(f"  Comparing with: '{orig_title}' at '{orig_company}'")
-                    if (orig_title == job_title.strip() and
-                        orig_company == company_name.strip()):
-                        original_exp = orig
-                        logger.info(f"  ✓ Match found! Dates: {orig.get('startDate')} - {orig.get('endDate')}")
-                        break
-
-                if not original_exp:
-                    logger.warning(f"  ✗ No match found for '{job_title}' at '{company_name}'")
-
-            # Get dates from original experience if found, otherwise from exp itself
-            if original_exp:
-                start_date = original_exp.get('startDate', '')
-                end_date = original_exp.get('endDate', '')
-                currently_working = original_exp.get('currentlyWorking', False)
-                location = original_exp.get('location', '')
-            else:
-                start_date = exp.get('startDate', '')
-                end_date = exp.get('endDate', '')
-                currently_working = exp.get('currentlyWorking', False)
-                location = exp.get('location', '')
-
-            # Set end date to Present if currently working
-            if currently_working or not end_date:
-                end_date = 'Present'
-
-            logger.info(f"Final dates for '{job_title}': start={start_date}, end={end_date}, currently_working={currently_working}")
-
-            # Job title
-            elements.append(Paragraph(job_title, self.styles['JobTitle']))
-
-            # Company and dates
-            company_line = company_name
-            if start_date or end_date:
-                company_line += f" | {start_date} - {end_date}"
-            if location:
-                company_line += f" | {location}"
-
-            logger.info(f"Company line: {company_line}")
-
-            elements.append(Paragraph(company_line, self.styles['CompanyInfo']))
-
-            # Get bullets - prefer tailored_bullets, fallback to achievements/responsibilities
-            bullets = exp.get('tailored_bullets', [])
-            if not bullets:
-                bullets = exp.get('achievements', []) or exp.get('responsibilities', [])
-
-            # Add bullets
-            if bullets:
-                bullet_items = []
-                for bullet in bullets:
-                    if bullet.strip():
-                        bullet_items.append(ListItem(
-                            Paragraph(bullet.strip(), self.styles['BulletPoint']),
-                            leftIndent=0
-                        ))
-
-                if bullet_items:
-                    bullet_list = ListFlowable(
-                        bullet_items,
-                        bulletType='bullet',
-                        leftIndent=18,
-                        bulletFontSize=8,
-                        bulletOffsetY=-1
-                    )
-                    elements.append(bullet_list)
-
-            elements.append(Spacer(1, 0.08 * inch))
-
-        return elements
-
-    def _build_skills_section(self, skills: List[Dict]) -> List:
-        """Build skills section"""
-        elements = []
-
-        if not skills:
-            return elements
-
-        elements.append(Paragraph("SKILLS", self.styles['SectionHeader']))
-
-        # Group skills by level if available
-        skill_names = [s.get('name', '') for s in skills if s.get('name')]
-
-        if skill_names:
-            skills_text = " • ".join(skill_names)
-            elements.append(Paragraph(skills_text, self.styles['ResumeBodyText']))
-
-        return elements
-
-    def _build_education_section(self, education: List[Dict]) -> List:
-        """Build education section"""
-        elements = []
-
-        if not education:
-            return elements
-
-        elements.append(Paragraph("EDUCATION", self.styles['SectionHeader']))
-
-        for edu in education:
-            degree = edu.get('degree', '')
-            field_of_study = edu.get('fieldOfStudy', '')
-            institution = edu.get('institution', '')
-            start_year = edu.get('startYear', '')
-            end_year = edu.get('endYear', '')
-            grade = edu.get('grade', '')
-
-            # Build education entry
-            if degree and field_of_study:
-                edu_title = f"{degree} in {field_of_study}"
-            elif degree:
-                edu_title = degree
-            else:
-                edu_title = field_of_study or "Degree"
-
-            elements.append(Paragraph(edu_title, self.styles['JobTitle']))
-
-            # Institution and dates
-            inst_line = institution if institution else ""
-            if start_year and end_year:
-                inst_line += f" | {start_year} - {end_year}"
-            elif end_year:
-                inst_line += f" | {end_year}"
-
-            if inst_line:
-                elements.append(Paragraph(inst_line, self.styles['CompanyInfo']))
-
-            # Grade if available
-            if grade:
-                elements.append(Paragraph(f"Grade: {grade}", self.styles['BulletPoint']))
-
-            elements.append(Spacer(1, 0.08 * inch))
-
-        return elements
-
-    def _build_certifications_section(self, certifications: List[Dict]) -> List:
-        """Build certifications section"""
-        elements = []
-
-        if not certifications:
-            return elements
-
-        elements.append(Paragraph("CERTIFICATIONS", self.styles['SectionHeader']))
-
-        for cert in certifications:
-            name = cert.get('name', '')
-            org = cert.get('issuingOrganization', '')
-            issue_date = cert.get('issueDate', '')
-            credential_id = cert.get('credentialId', '')
-
-            if name:
-                cert_text = f"<b>{name}</b>"
-                if org:
-                    cert_text += f" - {org}"
-                if issue_date:
-                    cert_text += f" ({issue_date})"
-
-                elements.append(Paragraph(cert_text, self.styles['BulletPoint']))
-
-        elements.append(Spacer(1, 0.08 * inch))
-
-        return elements
