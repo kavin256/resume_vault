@@ -8,6 +8,7 @@ import json
 import os
 from typing import Dict, Any
 from .ai_provider import BaseAIProvider, TailoredResume, TailoredExperience
+from .html_template_generator import HTMLResumeTemplateGenerator
 import logging
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class ClaudeProvider(BaseAIProvider):
         timeout = float(os.getenv("AI_TIMEOUT", "60"))
         self.client = httpx.AsyncClient(timeout=timeout)
         self.max_tokens = int(os.getenv("AI_MAX_TOKENS", "4096"))
+        self.html_generator = HTMLResumeTemplateGenerator()
 
     async def tailor_resume(
         self,
@@ -109,7 +111,7 @@ class ClaudeProvider(BaseAIProvider):
         job_info: Dict[str, Any]
     ) -> str:
         """
-        Generate complete HTML resume with inline styling.
+        Generate complete HTML resume with inline styling using template.
 
         Args:
             master_profile: Complete user profile dictionary
@@ -121,23 +123,21 @@ class ClaudeProvider(BaseAIProvider):
         """
         logger.info(f"Generating HTML resume for {job_info.get('company_name')} - {job_info.get('position')}")
 
-        prompt = self._build_html_resume_prompt(master_profile, tailored_resume, job_info)
-
         try:
-            response = await self._call_api(prompt, max_tokens=4096)
-            html_content = self._parse_text_response(response)
+            # Prepare tailored content
+            tailored_content = {
+                'tailored_summary': tailored_resume.tailored_summary,
+                'tailored_experience': [exp.dict() for exp in tailored_resume.tailored_experience]
+            }
+            
+            # Generate HTML using template generator
+            html_content = self.html_generator.generate_resume_html(
+                profile=master_profile,
+                tailored_content=tailored_content,
+                job_info=job_info
+            )
 
-            # Clean up any markdown code blocks if present
-            if '```html' in html_content:
-                start = html_content.find('```html') + 7
-                end = html_content.find('```', start)
-                html_content = html_content[start:end].strip()
-            elif '```' in html_content:
-                start = html_content.find('```') + 3
-                end = html_content.find('```', start)
-                html_content = html_content[start:end].strip()
-
-            logger.info("Successfully generated HTML resume")
+            logger.info("Successfully generated HTML resume using template")
             return html_content
         except Exception as e:
             logger.error(f"Error generating HTML resume: {str(e)}", exc_info=True)
@@ -546,8 +546,14 @@ Return ONLY the complete HTML document. Start with <!DOCTYPE html>. Do NOT wrap 
                 json_end = content.find('```', json_start)
                 content = content[json_start:json_end].strip()
 
-            # Parse JSON
-            data = json.loads(content)
+            # Clean control characters from JSON string
+            # Replace problematic control characters while preserving valid JSON structure
+            import re
+            # Remove or replace invalid control characters (except \n, \r, \t which are valid when escaped)
+            content = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', content)
+            
+            # Parse JSON with strict=False to be more lenient
+            data = json.loads(content, strict=False)
 
             # Convert to TailoredResume model
             tailored_exp = [

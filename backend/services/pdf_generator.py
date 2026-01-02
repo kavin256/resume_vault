@@ -1,6 +1,6 @@
 """
 Professional PDF Generation Service
-Creates polished, ATS-friendly resume and cover letter PDFs
+Creates polished, ATS-friendly resume and cover letter PDFs using HTML templates
 """
 
 from reportlab.lib.pagesizes import letter
@@ -13,6 +13,9 @@ from io import BytesIO
 from typing import Dict, Any, List
 import logging
 
+from services.html_template_generator import HTMLResumeTemplateGenerator
+from services.html_converter import HTMLToPDFConverter
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,6 +26,10 @@ class ProfessionalPDFGenerator:
         """Initialize PDF generator with custom styles"""
         self.styles = getSampleStyleSheet()
         self._setup_custom_styles()
+        
+        # Initialize HTML template generator and converter
+        self.html_generator = HTMLResumeTemplateGenerator()
+        self.html_converter = HTMLToPDFConverter()
 
     def _setup_custom_styles(self):
         """Create custom paragraph styles for resume sections"""
@@ -122,7 +129,7 @@ class ProfessionalPDFGenerator:
         job_info: Dict[str, str]
     ) -> bytes:
         """
-        Generate professional resume PDF.
+        Generate professional resume PDF using HTML template.
 
         Args:
             profile: Master profile dictionary
@@ -132,7 +139,40 @@ class ProfessionalPDFGenerator:
         Returns:
             PDF bytes
         """
-        logger.info("Generating professional resume PDF")
+        logger.info("Generating professional resume PDF from HTML template")
+
+        try:
+            # Generate HTML resume
+            html_content = self.html_generator.generate_resume_html(
+                profile=profile,
+                tailored_content=tailored_content,
+                job_info=job_info
+            )
+            
+            # Convert HTML to PDF
+            pdf_bytes = self.html_converter.convert(html_content)
+            
+            logger.info("Resume PDF generated successfully from HTML template")
+            return pdf_bytes
+            
+        except Exception as e:
+            logger.error(f"Failed to generate HTML-based resume PDF: {e}")
+            logger.info("Falling back to ReportLab-based generation")
+            
+            # Fallback to original ReportLab method
+            return self._generate_resume_reportlab(profile, tailored_content, job_info)
+    
+    def _generate_resume_reportlab(
+        self,
+        profile: Dict[str, Any],
+        tailored_content: Dict[str, Any],
+        job_info: Dict[str, str]
+    ) -> bytes:
+        """
+        Fallback method: Generate resume using ReportLab directly.
+        This is kept as a backup if HTML conversion fails.
+        """
+        logger.info("Generating professional resume PDF with ReportLab")
 
         buffer = BytesIO()
         doc = SimpleDocTemplate(

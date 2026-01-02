@@ -32,9 +32,11 @@ async def connect_to_mongo():
 
     try:
         # Create client with extended timeout for cloud deployment
+        # tlsAllowInvalidCertificates is set for development to avoid SSL certificate issues on macOS
         mongo_client = AsyncIOMotorClient(
             MONGODB_URI,
             serverSelectionTimeoutMS=30000,
+            tlsAllowInvalidCertificates=True
         )
         database = mongo_client[DATABASE_NAME]
 
