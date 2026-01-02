@@ -270,8 +270,8 @@ async def get_resume(
             job_application_id=job_application_id,
             current_version=doc["currentVersion"],
             versions=versions_list,
-            latex_content=version_data.get("latexContent", version_data.get("htmlContent", "")),
-            cover_letter_content=version_data.get("coverLetterContent", version_data.get("coverLetterHtml", "")),
+            latex_content=version_data.get("latexContent", ""),
+            cover_letter_content=version_data.get("coverLetterContent", ""),
             job_info=doc["jobInfo"]
         )
 
@@ -403,7 +403,7 @@ async def regenerate_with_edits(
             "versionNumber": new_version_number,
             "createdAt": datetime.utcnow().isoformat(),
             "latexContent": new_latex,
-            "coverLetterContent": current_version_data.get("coverLetterContent", current_version_data.get("coverLetterHtml", "")),
+            "coverLetterContent": current_version_data.get("coverLetterContent", ""),
             "tailoredData": tailored_data,
             "atsScores": current_version_data["atsScores"],  # Keep same scores for now
             "isEdited": True
@@ -427,7 +427,7 @@ async def regenerate_with_edits(
             job_application_id=job_application_id,
             version_number=new_version_number,
             latex_content=new_latex,
-            cover_letter_content=current_version_data.get("coverLetterContent", current_version_data.get("coverLetterHtml", ""))
+            cover_letter_content=current_version_data.get("coverLetterContent", "")
         )
 
     except HTTPException:
@@ -470,9 +470,9 @@ async def download_resume_pdf(
         if not version_data:
             raise HTTPException(status_code=404, detail=f"Version {version_to_get} not found")
 
-        # Get LaTeX content (support both old and new field names)
-        latex_content = version_data.get("latexContent", version_data.get("htmlContent", ""))
-        
+        # Get LaTeX content
+        latex_content = version_data.get("latexContent", "")
+
         if not latex_content:
             raise HTTPException(status_code=500, detail="No LaTeX content found")
 
