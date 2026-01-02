@@ -15,13 +15,30 @@ logger = logging.getLogger(__name__)
 class LaTeXLocalCompiler:
     """Compile LaTeX using local pdflatex installation"""
 
-    def __init__(self, pdflatex_path: str = "/Library/TeX/texbin/pdflatex"):
+    def __init__(self, pdflatex_path: str = None):
         """
         Initialize LaTeX compiler
 
         Args:
-            pdflatex_path: Path to pdflatex executable
+            pdflatex_path: Path to pdflatex executable (auto-detected if not provided)
         """
+        # Auto-detect pdflatex path if not provided
+        if pdflatex_path is None:
+            import shutil
+            pdflatex_path = shutil.which("pdflatex")
+            if pdflatex_path is None:
+                # Fallback to common paths
+                common_paths = [
+                    "/usr/bin/pdflatex",  # Linux/Docker
+                    "/Library/TeX/texbin/pdflatex",  # macOS
+                ]
+                for path in common_paths:
+                    if os.path.exists(path):
+                        pdflatex_path = path
+                        break
+                else:
+                    raise Exception("pdflatex not found. Please install TeX Live or MacTeX.")
+
         self.pdflatex_path = pdflatex_path
         logger.info(f"LaTeX local compiler initialized (pdflatex: {pdflatex_path})")
 
