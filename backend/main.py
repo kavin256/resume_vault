@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 
 # Import database and router modules
 from database import connect_to_mongo, close_mongo_connection, get_database
-from routers import users, profiles
+from routers import users, profiles, resumes
 from routers.profiles import MasterProfile  # Use comprehensive MasterProfile model
 from auth import verify_clerk_token  # Import authentication
 
@@ -39,6 +39,8 @@ async def lifespan(app: FastAPI):
     await db["users"].create_index("clerk_user_id", unique=True)
     await db["users"].create_index("email")  # For orphaned account lookups
     await db["master_profiles"].create_index("userId", unique=True)  # Master profile index
+    await db["resume_generations"].create_index("userId")  # Resume generations by user
+    await db["resume_generations"].create_index("jobApplicationId", unique=True)  # Unique job application ID
     print("✓ MongoDB indexes created")
 
     # Validate AI provider
@@ -73,6 +75,7 @@ app.add_middleware(
 # Include routers
 app.include_router(users.router)
 app.include_router(profiles.router)
+app.include_router(resumes.router)
 
 
 # Simple MasterProfile for backwards compatibility with existing frontend

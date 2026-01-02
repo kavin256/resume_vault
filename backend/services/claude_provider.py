@@ -102,6 +102,88 @@ class ClaudeProvider(BaseAIProvider):
             logger.error(f"Error generating cover letter: {str(e)}", exc_info=True)
             raise
 
+    async def generate_html_resume(
+        self,
+        master_profile: Dict[str, Any],
+        tailored_resume: Any,
+        job_info: Dict[str, Any]
+    ) -> str:
+        """
+        Generate complete HTML resume with inline styling.
+
+        Args:
+            master_profile: Complete user profile dictionary
+            tailored_resume: TailoredResume object with customized content
+            job_info: Dict with company_name, position, etc.
+
+        Returns:
+            Complete HTML document string with embedded CSS
+        """
+        logger.info(f"Generating HTML resume for {job_info.get('company_name')} - {job_info.get('position')}")
+
+        prompt = self._build_html_resume_prompt(master_profile, tailored_resume, job_info)
+
+        try:
+            response = await self._call_api(prompt, max_tokens=4096)
+            html_content = self._parse_text_response(response)
+
+            # Clean up any markdown code blocks if present
+            if '```html' in html_content:
+                start = html_content.find('```html') + 7
+                end = html_content.find('```', start)
+                html_content = html_content[start:end].strip()
+            elif '```' in html_content:
+                start = html_content.find('```') + 3
+                end = html_content.find('```', start)
+                html_content = html_content[start:end].strip()
+
+            logger.info("Successfully generated HTML resume")
+            return html_content
+        except Exception as e:
+            logger.error(f"Error generating HTML resume: {str(e)}", exc_info=True)
+            raise
+
+    async def regenerate_html_with_edits(
+        self,
+        original_html: str,
+        edited_content: Dict[str, Any],
+        job_info: Dict[str, Any]
+    ) -> str:
+        """
+        Regenerate HTML resume preserving exact styling but with new content.
+
+        Args:
+            original_html: The original HTML resume
+            edited_content: Dictionary with edited sections
+            job_info: Job information for context
+
+        Returns:
+            Updated HTML document string
+        """
+        logger.info(f"Regenerating HTML resume with edits for {job_info.get('company_name')}")
+
+        prompt = self._build_regeneration_prompt(original_html, edited_content, job_info)
+
+        try:
+            response = await self._call_api(prompt, max_tokens=4096)
+            html_content = self._parse_text_response(response)
+
+            # Clean up any markdown code blocks
+            if '```html' in html_content:
+                start = html_content.find('```html') + 7
+                end = html_content.find('```', start)
+                html_content = html_content[start:end].strip()
+            elif '```' in html_content:
+                start = html_content.find('```') + 3
+                end = html_content.find('```', start)
+                html_content = html_content[start:end].strip()
+
+            logger.info("Successfully regenerated HTML resume")
+            return html_content
+        except Exception as e:
+            logger.error(f"Error regenerating HTML resume: {str(e)}", exc_info=True)
+            raise
+
     async def health_check(self) -> bool:
         """
         Verify API connectivity and credentials.
@@ -253,6 +335,146 @@ CRITICAL FORMATTING REQUIREMENTS:
 - DO NOT include any brackets, placeholders, or generic text
 
 Return ONLY the cover letter text, no JSON, no additional commentary."""
+
+    def _build_html_resume_prompt(
+        self,
+        profile: Dict[str, Any],
+        tailored_resume: Any,
+        job_info: Dict[str, Any]
+    ) -> str:
+        """Construct prompt for HTML resume generation"""
+
+        personal_info = profile.get('personalInfo', {})
+        first_name = personal_info.get('firstName', '')
+        last_name = personal_info.get('lastName', '')
+        email = personal_info.get('email', '')
+        phone = personal_info.get('phone', '')
+        location = personal_info.get('location', {})
+        city = location.get('city', '')
+        country = location.get('country', '')
+        linkedin_url = personal_info.get('linkedinUrl', '')
+        portfolio_url = personal_info.get('portfolioUrl', '')
+
+        # Format education
+        education = profile.get('education', [])
+        education_text = self._format_education(education)
+
+        # Get skills
+        skills = profile.get('skills', [])
+        skills_text = ', '.join([s.get('name', '') for s in skills]) if skills else ''
+
+        return f"""You are an expert resume designer. Generate a professional, ATS-friendly HTML resume with complete inline styling.
+
+CANDIDATE INFORMATION:
+Name: {first_name} {last_name}
+Email: {email}
+Phone: {phone}
+Location: {city}, {country}
+LinkedIn: {linkedin_url}
+Portfolio: {portfolio_url}
+
+JOB TARGET:
+Company: {job_info.get('company_name', '')}
+Position: {job_info.get('position', '')}
+
+TAILORED CONTENT:
+Professional Summary: {tailored_resume.tailored_summary}
+
+Work Experience:
+{self._format_tailored_experiences(tailored_resume.tailored_experience)}
+
+Skills: {skills_text}
+
+Education:
+{education_text}
+
+TASK: Generate a complete HTML document with the following requirements:
+
+1. STRUCTURE - Use semantic HTML5 with data attributes:
+   - <div data-section="header"> for personal info (name, contact details)
+   - <div data-section="summary" data-editable="true"> for professional summary
+   - <div data-section="experience" data-job-index="0" data-editable="true"> for each job
+   - <div data-section="skills" data-editable="true"> for skills section
+   - <div data-section="education" data-editable="true"> for education section
+
+2. STYLING - Include complete inline CSS in <style> tag:
+   - Professional color scheme (use blues like #2c5aa0 for headers, grays for text)
+   - Clean typography using system fonts: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif
+   - Print-optimized with @media print rules
+   - Page width: max-width 850px, centered
+   - Clean section spacing and professional margins
+   - No external dependencies - all CSS must be inline in <style> tag
+
+3. PRINT OPTIMIZATION:
+   - Add @media print rules to prevent page breaks inside sections
+   - Optimize for A4/Letter paper size
+   - Ensure good contrast for printing
+
+4. ATS-FRIENDLY:
+   - Use simple, clean HTML structure
+   - Avoid tables, images, or complex layouts
+   - Use standard heading tags (h1, h2, h3)
+   - Clear section demarcation
+
+5. CONTENT PRESENTATION:
+   - Header: Name (large, bold), contact info below (email, phone, location, LinkedIn, portfolio)
+   - Summary: Professional summary paragraph
+   - Experience: Job title (bold), company name and dates, bullet points
+   - Skills: Comma-separated or grouped by category
+   - Education: Degree, field, institution, year
+
+CRITICAL: Return ONLY the complete HTML document. Start with <!DOCTYPE html> and include everything needed for a standalone HTML file. Do NOT wrap in markdown code blocks."""
+
+    def _build_regeneration_prompt(
+        self,
+        original_html: str,
+        edited_content: Dict[str, Any],
+        job_info: Dict[str, Any]
+    ) -> str:
+        """Construct prompt for regenerating HTML with edited content"""
+
+        return f"""You are an expert resume designer. You need to regenerate an HTML resume with new content while PRESERVING THE EXACT STYLING.
+
+ORIGINAL HTML (for style reference):
+{original_html}
+
+NEW CONTENT TO USE:
+Summary: {edited_content.get('summary', '')}
+Experiences: {json.dumps(edited_content.get('experiences', []), indent=2)}
+Skills: {edited_content.get('skills', '')}
+Education: {edited_content.get('education', '')}
+
+CRITICAL REQUIREMENTS:
+1. Extract the complete <style> section from the original HTML and use it EXACTLY as-is
+2. Use the SAME HTML structure and classes as the original
+3. Replace the content with the new edited content provided above
+4. Keep all data-* attributes intact (data-section, data-editable, data-job-index)
+5. Maintain the same visual layout, colors, fonts, spacing
+6. Preserve the header format (name, contact info)
+
+TASK:
+Generate the updated HTML document that looks IDENTICAL to the original but with the new content.
+
+Return ONLY the complete HTML document. Start with <!DOCTYPE html>. Do NOT wrap in markdown code blocks."""
+
+    def _format_tailored_experiences(self, experiences: list) -> str:
+        """Format tailored experiences for HTML resume prompt"""
+        if not experiences:
+            return "No work experience provided"
+
+        formatted = []
+        for exp in experiences:
+            job_title = exp.jobTitle
+            company = exp.companyName
+            bullets = exp.tailored_bullets
+
+            exp_text = f"{job_title} at {company}"
+            if bullets:
+                exp_text += "\n  " + "\n  ".join([f"• {bullet}" for bullet in bullets])
+
+            formatted.append(exp_text)
+
+        return "\n\n".join(formatted)
 
     async def _call_api(self, prompt: str, max_tokens: int = None) -> Dict[str, Any]:
         """
