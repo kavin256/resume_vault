@@ -113,12 +113,20 @@ resume_vault/
 ## ⚙️ Technical Overview
 
 ### Backend (FastAPI + Python)
-- **Framework**: FastAPI for high-performance API
-- **PDF Generation**: ReportLab for creating professional PDF documents
-- **API Endpoint**: `POST /generate`
-  - Accepts master profile data and job description
-  - Generates resume and cover letter PDFs in memory
-  - Returns base64-encoded files in JSON response
+- **Framework**: FastAPI for high-performance async API
+- **Database**: MongoDB with Motor (async driver)
+- **Authentication**: Clerk integration for secure user management
+- **AI Integration**: Claude/OpenAI for intelligent resume tailoring
+- **PDF Generation**: LaTeX → pdflatex → PDF (local compilation)
+- **Key Services**:
+  - `latex_generator.py` - Generates LaTeX from profile data
+  - `latex_local_compiler.py` - Compiles LaTeX to PDF using pdflatex
+  - `claude_provider.py` - AI-powered content tailoring
+- **API Endpoints**:
+  - `POST /resumes/generate-latex` - Generate LaTeX resume with AI
+  - `GET /resumes/{id}/pdf` - Download resume as PDF
+  - `POST /resumes/{id}/regenerate` - Regenerate with edits
+  - `GET /resumes/list/all` - List all user resumes
 - **CORS enabled** for local development
 
 ### Frontend (Vue 3 + Vite)
@@ -145,55 +153,32 @@ resume_vault/
 - **Full-Width Layout** - Efficient use of screen space
 - **Active Navigation States** - Visual feedback showing current page
 
-## 🎨 Recent Implementation: HTML Resume Generation with Preview & Editing
+## 🎨 Current Implementation: LaTeX-Based Resume Generation
 
-### What's New
-We've transformed the resume generation from PDF-only to an **HTML-first approach** that enables live preview and iterative editing while maintaining AI control over styling.
+### Architecture Overview
+We use a **LaTeX-first approach** for professional, ATS-friendly resume generation with full editing capabilities.
 
-### Implementation Checklist
+### Key Features
+- ✨ **LaTeX-based generation** - Professional typography and formatting
+- 🤖 **AI-powered tailoring** - Claude/OpenAI analyzes job descriptions
+- 📝 **Content editing** - Modify resume content and regenerate
+- 📚 **Version history** - Track all changes with version control
+- 📄 **Local PDF compilation** - Fast, reliable using pdflatex
+- 🚀 **Auto-scroll** - Automatically scrolls to generated content
 
-#### ✅ Backend Implementation
-- [x] **Add dependencies to requirements.txt** (weasyprint, beautifulsoup4, lxml)
-- [x] **Add generate_html_resume() method to ClaudeProvider** - AI generates complete HTML with inline CSS
-- [x] **Add regenerate_html_with_edits() method to ClaudeProvider** - Preserves styling while updating content
-- [x] **Create html_converter.py service** - HTML→PDF conversion using WeasyPrint
-- [x] **Create content_extractor.py service** - Extract editable content from HTML using BeautifulSoup
-- [x] **Create resumes.py router** - Complete REST API with 6 endpoints
-- [x] **Update main.py** - Include resumes router and DB indexes for resume_generations collection
+### User Flow
 
-#### ✅ Frontend Implementation
-- [x] **Create ResumePreview.vue component** - Live HTML preview with download/edit buttons
-- [x] **Create ResumeEditForm.vue component** - Form to edit resume content with structured sections
-- [x] **Update GenerateView.vue** - Integrate HTML generation flow with preview and edit capabilities
-- [x] **Update api.js** - Add new resume API methods (implied by component implementation)
-
-#### 🧪 Testing Checklist
-- [ ] **Test end-to-end flow** (generate → preview → download)
-- [ ] **Test edit flow** (edit → regenerate → preview)
-
-### New API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/resumes/generate-html` | POST | Generate HTML resume and store in DB |
-| `/resumes/{id}` | GET | Get resume by ID (with version support) |
-| `/resumes/{id}/extract` | GET | Extract editable content from HTML |
-| `/resumes/{id}/regenerate` | POST | Regenerate HTML with edited content |
-| `/resumes/{id}/pdf` | GET | Download resume as PDF |
-| `/resumes/list/all` | GET | List all user's resumes |
-
-### New User Flow
-
-1. **Generate** - User fills job details → Gets HTML preview
-2. **Preview** - User sees professional HTML resume in browser
-3. **Choose Action**:
-   - **Edit Content** → Form with all sections → Regenerate → Preview updated
-   - **Download PDF** → HTML→PDF conversion → Browser download
-4. **Multiple Iterations** - Edit and regenerate as many times as needed
+1. **Create Master Profile** - Store all professional information once
+2. **Generate Resume** - AI tailors content to job description
+3. **Preview** - See LaTeX content with formatting
+4. **Choose Action**:
+   - **Edit Content** → Modify summary/experiences → Regenerate
+   - **Download PDF** → LaTeX→PDF compilation → Browser download
+5. **Version Control** - All edits create new versions
 
 ### Database Schema
 
-**New Collection: `resume_generations`**
+**Collection: `resume_generations`**
 ```javascript
 {
   "_id": ObjectId,
@@ -202,38 +187,52 @@ We've transformed the resume generation from PDF-only to an **HTML-first approac
   "jobInfo": {
     "companyName": str,
     "position": str,
+    "jobId": str,
+    "postingLink": str,
     "jobDescription": str
   },
   "versions": [
     {
       "versionNumber": 1,
       "createdAt": ISO datetime,
-      "htmlContent": str,
-      "coverLetterHtml": str,
-      "tailoredData": {...},
+      "latexContent": str,
+      "coverLetterContent": str,
+      "tailoredData": {
+        "tailored_summary": str,
+        "tailored_experience": [...],
+        "keyword_matches": [...],
+        "recommendations": [...]
+      },
       "atsScores": {"resume": int, "coverLetter": int},
       "isEdited": bool
     }
   ],
-  "currentVersion": 1
+  "currentVersion": 1,
+  "createdAt": ISO datetime,
+  "updatedAt": ISO datetime
 }
 ```
 
-### Key Features
-- ✨ **HTML-first generation** - AI creates complete styled HTML resumes
-- 👁️ **Live preview** - See resume before downloading
-- ✏️ **Content editing** - Modify text while preserving AI-generated styling
-- 📚 **Version history** - Track multiple versions of each resume
-- 🎨 **Style preservation** - AI maintains exact formatting when regenerating
-- 📄 **On-demand PDF** - Convert to PDF only when needed
+### Why LaTeX?
+- ✅ **Professional output** - Industry-standard typography
+- ✅ **ATS-friendly** - Clean, parseable structure
+- ✅ **No external dependencies** - Local compilation
+- ✅ **Fast** - 2-3 seconds per PDF
+- ✅ **Reliable** - No URL length limits, no API quotas
 
-## 🔮 Future Enhancements
+## 🔮 Next Steps
 
-- **Cover Letter HTML Preview** - Extend preview functionality to cover letters
-- **Version History UI** - Visual timeline of resume versions with comparison
-- **Multiple Resume Templates** - Choose from different professional HTML designs
-- **Resume Comparison View** - Side-by-side comparison of versions
-- **Custom Styling Options** - User control over colors and fonts
+See [STATUS.md](STATUS.md) and [TODO.md](TODO.md) for detailed roadmap.
+
+### Immediate Priorities
+- **Cover Letter Preview & Download** - PDF generation for cover letters
+- **Cover Letter Editing** - Edit and regenerate cover letters
+- **Enhanced Resume Editing** - Education, skills, certifications
+
+### Future Enhancements
+- **Multiple LaTeX Templates** - Choose from different professional designs
+- **Version History UI** - Visual timeline with comparison
+- **Template Customization** - User control over styling
 - **Export Formats** - Support for DOCX and other formats
 
 ## 📝 License

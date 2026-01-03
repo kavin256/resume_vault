@@ -1,11 +1,11 @@
 <template>
-  <div class="generate-view">
-    <div class="page-header">
+  <div class="generate-view" :class="{ 'editing-mode': isEditing }">
+    <div v-if="!isEditing" class="page-header">
       <h1>Generate Resume</h1>
       <p class="page-description">Paste the job description below and generate a tailored resume.</p>
     </div>
 
-    <div class="card">
+    <div v-if="!isEditing" class="card">
       <h2 class="section-title">Job Details</h2>
 
       <div class="form-row">
@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div v-if="!isEditing" class="card">
       <h2 class="section-title">Job Description</h2>
       <textarea
         v-model="jobDescription"
@@ -49,25 +49,27 @@
       </div>
     </div>
 
-    <div class="generate-section">
+    <div v-if="!isEditing" class="generate-section">
       <Button @click="handleGenerate" :disabled="isGenerating" size="lg">
         {{ isGenerating ? 'Generating...' : 'Generate Resume & Cover Letter' }}
       </Button>
     </div>
 
-    <div v-if="error" class="error-card">
+    <div v-if="error && !isEditing" class="error-card">
       <strong>Error:</strong> {{ error }}
     </div>
 
     <!-- Show preview when generated and not editing -->
-    <ResumePreview
-      v-if="generated && !isEditing"
-      :latex-content="latexContent"
-      :job-application-id="jobApplicationId"
-      :ats-score="resumeAtsScore"
-      @edit="handleEdit"
-      @downloaded="handleDownloaded"
-    />
+    <div ref="previewSection">
+      <ResumePreview
+        v-if="generated && !isEditing"
+        :latex-content="latexContent"
+        :job-application-id="jobApplicationId"
+        :ats-score="resumeAtsScore"
+        @edit="handleEdit"
+        @downloaded="handleDownloaded"
+      />
+    </div>
 
     <!-- Show edit form when editing -->
     <ResumeEditForm
@@ -80,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useAuth } from '@clerk/vue'
 import { Button } from '@/components/ui/button'
 import ResumePreview from '@/components/ResumePreview.vue'
@@ -101,6 +103,7 @@ const jobApplicationId = ref('')
 const resumeAtsScore = ref(0)
 const coverLetterAtsScore = ref(0)
 const error = ref('')
+const previewSection = ref(null)
 
 async function handleGenerate() {
   error.value = ''
@@ -144,6 +147,12 @@ async function handleGenerate() {
     resumeAtsScore.value = data.resume_ats_score
     coverLetterAtsScore.value = data.cover_letter_ats_score
     generated.value = true
+
+    // Scroll to preview section after DOM update
+    await nextTick()
+    if (previewSection.value) {
+      previewSection.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   } catch (err) {
     error.value = err.message || 'Failed to generate documents. Make sure the backend is running.'
     console.error(err)
@@ -160,11 +169,17 @@ function handleCancelEdit() {
   isEditing.value = false
 }
 
-function handleRegenerated(data) {
+async function handleRegenerated(data) {
   // Update with regenerated content
   latexContent.value = data.latex_content
   coverLetterContent.value = data.cover_letter_content
   isEditing.value = false
+
+  // Scroll to preview section after DOM update
+  await nextTick()
+  if (previewSection.value) {
+    previewSection.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 }
 
 function handleDownloaded() {
@@ -244,15 +259,28 @@ function getScoreClass(score) {
   padding: 40px 48px 64px 48px;
 }
 
+.generate-view.editing-mode {
+  max-width: 100%;
+  padding: 24px 32px;
+}
+
 @media (max-width: 1024px) {
   .generate-view {
     padding: 32px 32px 64px 32px;
+  }
+
+  .generate-view.editing-mode {
+    padding: 20px 24px;
   }
 }
 
 @media (max-width: 768px) {
   .generate-view {
     padding: 24px 20px 48px 20px;
+  }
+
+  .generate-view.editing-mode {
+    padding: 16px;
   }
 }
 

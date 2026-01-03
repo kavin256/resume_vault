@@ -1,7 +1,7 @@
 <template>
   <div class="resume-preview-container">
     <div class="preview-header">
-      <h3 class="preview-title">Resume Preview (LaTeX)</h3>
+      <h3 class="preview-title">Resume Preview</h3>
       <div class="preview-actions">
         <Button @click="handleEdit" variant="outline" size="default">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -20,7 +20,7 @@
     </div>
 
     <div class="preview-info">
-      <p class="preview-description">Review your LaTeX source below. Click "Download PDF" to compile and download the formatted resume.</p>
+      <p class="preview-description">Review your resume PDF below. Click "Edit Content" to modify or "Download PDF" to save.</p>
       <div class="ats-scores-mini">
         <span class="score-badge" :class="getScoreClass(atsScore)">
           ATS Score: {{ atsScore }}%
@@ -28,30 +28,35 @@
       </div>
     </div>
 
-    <!-- LaTeX Source Code Display -->
+    <!-- PDF Preview -->
     <div class="preview-frame-container">
-      <div class="latex-source-container">
-        <div class="source-header">
-          <span class="source-label">LaTeX Source Code</span>
-          <button @click="copyToClipboard" class="copy-button" :class="{ 'copied': isCopied }">
-            <svg v-if="!isCopied" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
-            </svg>
-            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"></polyline>
-            </svg>
-            {{ isCopied ? 'Copied!' : 'Copy' }}
-          </button>
-        </div>
-        <pre class="latex-source"><code>{{ latexContent }}</code></pre>
+      <div v-if="loadingPdf" class="pdf-loading">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spinner">
+          <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+        </svg>
+        <p>Loading PDF preview...</p>
       </div>
+      <div v-else-if="pdfError" class="pdf-error">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <p>{{ pdfError }}</p>
+        <Button @click="loadPdfPreview" variant="outline" size="sm">Retry</Button>
+      </div>
+      <iframe
+        v-else-if="pdfUrl"
+        :src="pdfUrl + '#view=FitH&toolbar=0'"
+        class="pdf-viewer"
+        title="Resume PDF Preview"
+      ></iframe>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useAuth } from '@clerk/vue'
 import { Button } from '@/components/ui/button'
 
@@ -74,10 +79,50 @@ const emit = defineEmits(['edit', 'downloaded'])
 
 const auth = useAuth()
 const isDownloading = ref(false)
-const isCopied = ref(false)
+const loadingPdf = ref(false)
+const pdfError = ref('')
+const pdfUrl = ref('')
 
 function handleEdit() {
   emit('edit')
+}
+
+async function loadPdfPreview() {
+  loadingPdf.value = true
+  pdfError.value = ''
+
+  try {
+    const token = await auth.getToken.value()
+    if (!token) {
+      throw new Error('No authentication token')
+    }
+
+    const API_URL = import.meta.env.VITE_API_URL || 'https://resume-vault.fly.dev'
+    const response = await fetch(`${API_URL}/resumes/${props.jobApplicationId}/pdf`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to load PDF preview')
+    }
+
+    const blob = await response.blob()
+
+    // Clean up old URL if exists
+    if (pdfUrl.value) {
+      URL.revokeObjectURL(pdfUrl.value)
+    }
+
+    // Create blob URL for preview
+    pdfUrl.value = URL.createObjectURL(blob)
+  } catch (error) {
+    console.error('Failed to load PDF preview:', error)
+    pdfError.value = error.message || 'Failed to load PDF preview. Please try again.'
+  } finally {
+    loadingPdf.value = false
+  }
 }
 
 async function handleDownloadPDF() {
@@ -126,17 +171,22 @@ function getScoreClass(score) {
   return 'score-poor'
 }
 
-async function copyToClipboard() {
-  try {
-    await navigator.clipboard.writeText(props.latexContent)
-    isCopied.value = true
-    setTimeout(() => {
-      isCopied.value = false
-    }, 2000)
-  } catch (error) {
-    console.error('Failed to copy:', error)
+// Load PDF preview when component mounts
+onMounted(() => {
+  loadPdfPreview()
+})
+
+// Watch for jobApplicationId changes and reload preview
+watch(() => props.jobApplicationId, () => {
+  loadPdfPreview()
+})
+
+// Clean up blob URL when component unmounts
+onUnmounted(() => {
+  if (pdfUrl.value) {
+    URL.revokeObjectURL(pdfUrl.value)
   }
-}
+})
 </script>
 
 <style scoped>
@@ -230,92 +280,57 @@ async function copyToClipboard() {
   overflow: hidden;
   max-width: 900px;
   margin: 0 auto;
-}
-
-.latex-source-container {
-  background: #1e1e1e;
-  color: #d4d4d4;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.source-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: #2d2d2d;
-  border-bottom: 1px solid #3e3e3e;
-}
-
-.source-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #9cdcfe;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.copy-button {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: #3e3e3e;
-  border: 1px solid #4e4e4e;
-  border-radius: 4px;
-  color: #d4d4d4;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
+  justify-content: center;
 }
 
-.copy-button:hover {
-  background: #4e4e4e;
-  border-color: #5e5e5e;
+.pdf-viewer {
+  width: 100%;
+  height: 1100px;
+  border: none;
+  background: #f5f5f5;
 }
 
-.copy-button.copied {
-  background: #16a34a;
-  border-color: #16a34a;
-  color: white;
+.pdf-loading,
+.pdf-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  gap: 1rem;
+  color: #4a4a4a;
+  min-height: 600px;
 }
 
-.latex-source {
+.pdf-loading svg,
+.pdf-error svg {
+  color: #3b82f6;
+}
+
+.pdf-error svg {
+  color: #dc2626;
+}
+
+.pdf-loading p,
+.pdf-error p {
   margin: 0;
-  padding: 20px;
-  overflow-x: auto;
-  max-height: 800px;
-  overflow-y: auto;
-  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.6;
-  background: #1e1e1e;
-  color: #d4d4d4;
+  font-size: 1rem;
+  color: #4a4a4a;
 }
 
-.latex-source code {
-  font-family: inherit;
-  color: inherit;
+.spinner {
+  animation: spin 1s linear infinite;
 }
 
-/* Scrollbar styling for dark theme */
-.latex-source::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-.latex-source::-webkit-scrollbar-track {
-  background: #2d2d2d;
-}
-
-.latex-source::-webkit-scrollbar-thumb {
-  background: #4e4e4e;
-  border-radius: 5px;
-}
-
-.latex-source::-webkit-scrollbar-thumb:hover {
-  background: #5e5e5e;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive */
@@ -333,10 +348,8 @@ async function copyToClipboard() {
     flex: 1;
   }
 
-  .latex-source {
-    font-size: 11px;
-    padding: 12px;
-    max-height: 600px;
+  .pdf-viewer {
+    height: 900px;
   }
 }
 </style>
