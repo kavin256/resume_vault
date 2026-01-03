@@ -47,7 +47,7 @@
       </div>
       <iframe
         v-else-if="pdfUrl"
-        :src="pdfUrl"
+        :src="pdfUrl + '#view=FitH&toolbar=0'"
         class="pdf-viewer"
         title="Resume PDF Preview"
       ></iframe>
@@ -280,7 +280,6 @@ onUnmounted(() => {
   overflow: hidden;
   max-width: 900px;
   margin: 0 auto;
-  min-height: 600px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -288,7 +287,7 @@ onUnmounted(() => {
 
 .pdf-viewer {
   width: 100%;
-  height: 800px;
+  height: 1100px;
   border: none;
   background: #f5f5f5;
 }
@@ -302,6 +301,7 @@ onUnmounted(() => {
   padding: 3rem 2rem;
   gap: 1rem;
   color: #4a4a4a;
+  min-height: 600px;
 }
 
 .pdf-loading svg,
@@ -349,11 +349,7 @@ onUnmounted(() => {
   }
 
   .pdf-viewer {
-    height: 600px;
-  }
-
-  .preview-frame-container {
-    min-height: 400px;
+    height: 900px;
   }
 }
 </style>

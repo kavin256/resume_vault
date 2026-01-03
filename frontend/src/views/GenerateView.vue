@@ -1,11 +1,11 @@
 <template>
-  <div class="generate-view">
-    <div class="page-header">
+  <div class="generate-view" :class="{ 'editing-mode': isEditing }">
+    <div v-if="!isEditing" class="page-header">
       <h1>Generate Resume</h1>
       <p class="page-description">Paste the job description below and generate a tailored resume.</p>
     </div>
 
-    <div class="card">
+    <div v-if="!isEditing" class="card">
       <h2 class="section-title">Job Details</h2>
 
       <div class="form-row">
@@ -33,7 +33,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div v-if="!isEditing" class="card">
       <h2 class="section-title">Job Description</h2>
       <textarea
         v-model="jobDescription"
@@ -49,13 +49,13 @@
       </div>
     </div>
 
-    <div class="generate-section">
+    <div v-if="!isEditing" class="generate-section">
       <Button @click="handleGenerate" :disabled="isGenerating" size="lg">
         {{ isGenerating ? 'Generating...' : 'Generate Resume & Cover Letter' }}
       </Button>
     </div>
 
-    <div v-if="error" class="error-card">
+    <div v-if="error && !isEditing" class="error-card">
       <strong>Error:</strong> {{ error }}
     </div>
 
@@ -259,15 +259,28 @@ function getScoreClass(score) {
   padding: 40px 48px 64px 48px;
 }
 
+.generate-view.editing-mode {
+  max-width: 100%;
+  padding: 24px 32px;
+}
+
 @media (max-width: 1024px) {
   .generate-view {
     padding: 32px 32px 64px 32px;
+  }
+
+  .generate-view.editing-mode {
+    padding: 20px 24px;
   }
 }
 
 @media (max-width: 768px) {
   .generate-view {
     padding: 24px 20px 48px 20px;
+  }
+
+  .generate-view.editing-mode {
+    padding: 16px;
   }
 }
 
