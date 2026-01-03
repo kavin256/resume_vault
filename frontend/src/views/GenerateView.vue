@@ -60,14 +60,16 @@
     </div>
 
     <!-- Show preview when generated and not editing -->
-    <ResumePreview
-      v-if="generated && !isEditing"
-      :latex-content="latexContent"
-      :job-application-id="jobApplicationId"
-      :ats-score="resumeAtsScore"
-      @edit="handleEdit"
-      @downloaded="handleDownloaded"
-    />
+    <div ref="previewSection">
+      <ResumePreview
+        v-if="generated && !isEditing"
+        :latex-content="latexContent"
+        :job-application-id="jobApplicationId"
+        :ats-score="resumeAtsScore"
+        @edit="handleEdit"
+        @downloaded="handleDownloaded"
+      />
+    </div>
 
     <!-- Show edit form when editing -->
     <ResumeEditForm
@@ -80,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useAuth } from '@clerk/vue'
 import { Button } from '@/components/ui/button'
 import ResumePreview from '@/components/ResumePreview.vue'
@@ -101,6 +103,7 @@ const jobApplicationId = ref('')
 const resumeAtsScore = ref(0)
 const coverLetterAtsScore = ref(0)
 const error = ref('')
+const previewSection = ref(null)
 
 async function handleGenerate() {
   error.value = ''
@@ -144,6 +147,12 @@ async function handleGenerate() {
     resumeAtsScore.value = data.resume_ats_score
     coverLetterAtsScore.value = data.cover_letter_ats_score
     generated.value = true
+
+    // Scroll to preview section after DOM update
+    await nextTick()
+    if (previewSection.value) {
+      previewSection.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   } catch (err) {
     error.value = err.message || 'Failed to generate documents. Make sure the backend is running.'
     console.error(err)
@@ -160,11 +169,17 @@ function handleCancelEdit() {
   isEditing.value = false
 }
 
-function handleRegenerated(data) {
+async function handleRegenerated(data) {
   // Update with regenerated content
   latexContent.value = data.latex_content
   coverLetterContent.value = data.cover_letter_content
   isEditing.value = false
+
+  // Scroll to preview section after DOM update
+  await nextTick()
+  if (previewSection.value) {
+    previewSection.value.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 }
 
 function handleDownloaded() {
